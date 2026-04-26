@@ -87,47 +87,42 @@
         }
 
         // ==========================================
-        // COMPONENTE: INICIO DE TURNO (SCADA ROBUSTO)
+        // COMPONENTE: INICIO DE TURNO (GABINETE)
         // ==========================================
         function InicioTurno({ onTurnoIniciado, userEmail }) {
             const [loading, setLoading] = useState(false);
-            const [atex, setAtex] = useState(false);
             const [scada, setScada] = useState({
                 dig_nivel: '', dig_presion: '', dig_temp: '',
                 gas_nivel: '', gas_presion: '',
                 comp_flujo: '', comp_pres_imp: '',
                 cald_flujo: '', ant_flujo: ''
             });
+            
+            // Checklist ATEX Específico
+            const [atexChecks, setAtexChecks] = useState({ c1: false, c2: false, c3: false });
+            const atexConfirmado = atexChecks.c1 && atexChecks.c2 && atexChecks.c3;
 
             const iniciar = async () => {
-                if (!atex) return alert("Debes confirmar la revision del protocolo ATEX.");
+                if (!atexConfirmado) return alert("Debes confirmar todos los puntos del protocolo ATEX.");
                 setLoading(true);
                 const { data, error } = await supabaseClient.from('registro_turnos').insert([{
                     operador_nombre: userEmail,
                     tipo_turno: 'Normal',
-                    
-                    // Mapeo a columnas antiguas y nuevas
                     scada_nivel_gasometro: scada.gas_nivel || null,
                     scada_presion_mbar: scada.gas_presion || null,
                     scada_flujo_biogas_nm3h: scada.comp_flujo || null,
-                    
-                    // Nuevas columnas PTAR Talagante
                     scada_dig_nivel_cm: scada.dig_nivel || null,
                     scada_dig_presion_mbar: scada.dig_presion || null,
                     scada_dig_temp_c: scada.dig_temp || null,
                     scada_comp_presion_imp_mbar: scada.comp_pres_imp || null,
                     scada_cald_flujo_m3h: scada.cald_flujo || null,
                     scada_ant_flujo_m3h: scada.ant_flujo || null,
-                    
-                    atex_confirmado: atex
+                    atex_confirmado: true
                 }]).select();
                 
                 setLoading(false);
-                if (error) {
-                    alert("Error guardando turno: " + error.message);
-                } else {
-                    onTurnoIniciado(data[0].id);
-                }
+                if (error) alert("Error guardando turno: " + error.message);
+                else onTurnoIniciado(data[0].id);
             };
 
             return (
@@ -147,7 +142,6 @@
                         </div>
                         
                         <div className="p-4 space-y-5">
-                            {/* Digestor */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Digestor</h4>
                                 <div className="grid grid-cols-3 gap-2">
@@ -156,8 +150,6 @@
                                     <div><label className="text-[10px] text-gray-500 font-bold">Temp (°C)</label><input type="number" step="0.1" className="w-full border p-2 rounded bg-gray-50 text-center font-bold" onChange={e => setScada({...scada, dig_temp: e.target.value})} /></div>
                                 </div>
                             </div>
-
-                            {/* Gasometro */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Gasometro</h4>
                                 <div className="grid grid-cols-2 gap-2">
@@ -165,8 +157,6 @@
                                     <div><label className="text-[10px] text-gray-500 font-bold">Presion (mbar)</label><input type="number" step="0.1" className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" placeholder="Ej: 16.5" onChange={e => setScada({...scada, gas_presion: e.target.value})} /></div>
                                 </div>
                             </div>
-
-                            {/* Compresores y Consumos */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Compresores y Consumos</h4>
                                 <div className="grid grid-cols-2 gap-2 mb-2">
@@ -181,17 +171,28 @@
                         </div>
                     </div>
 
+                    {/* NUEVO MÓDULO ATEX BASADO EN PLANO 6 */}
                     <div className="bg-white rounded-xl shadow-sm p-4 border-2 border-red-100">
                         <h3 className="text-sm font-bold text-red-700 uppercase mb-3 flex items-center">
-                            <span className="mr-2">🛑</span> Protocolo de Seguridad (ATEX)
+                            <span className="mr-2">🛑</span> Reconocimiento de Zonas (Plano 6)
                         </h3>
-                        <label className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                            <input type="checkbox" onChange={e => setAtex(e.target.checked)} className="h-6 w-6 text-red-600 mt-1" />
-                            <span className="text-sm text-red-900 font-medium">He revisado los riesgos y el plano ATEX.</span>
-                        </label>
+                        <div className="space-y-3">
+                            <label className="flex items-start space-x-3 p-2 bg-red-50 rounded-lg border border-red-100">
+                                <input type="checkbox" onChange={e => setAtexChecks({...atexChecks, c1: e.target.checked})} className="h-5 w-5 text-red-600 mt-0.5" />
+                                <span className="text-xs text-red-900 font-medium leading-tight">Reconozco el riesgo de Zona 1 en un radio de <b>1.5m</b> alrededor de la Guarda Hidraulica.</span>
+                            </label>
+                            <label className="flex items-start space-x-3 p-2 bg-red-50 rounded-lg border border-red-100">
+                                <input type="checkbox" onChange={e => setAtexChecks({...atexChecks, c2: e.target.checked})} className="h-5 w-5 text-red-600 mt-0.5" />
+                                <span className="text-xs text-red-900 font-medium leading-tight">Reconozco el riesgo de Zona 1 en un radio de <b>1.0m</b> de la Valvula Damper y purgas.</span>
+                            </label>
+                            <label className="flex items-start space-x-3 p-2 bg-red-50 rounded-lg border border-red-100">
+                                <input type="checkbox" onChange={e => setAtexChecks({...atexChecks, c3: e.target.checked})} className="h-5 w-5 text-red-600 mt-0.5" />
+                                <span className="text-xs text-red-900 font-medium leading-tight">Reconozco riesgo de Zona 2 a <b>0.35m</b> de cualquier brida o instrumento.</span>
+                            </label>
+                        </div>
                     </div>
 
-                    <button onClick={iniciar} disabled={!atex || loading} className={`w-full font-bold py-4 rounded-xl shadow-lg transition-colors text-white text-lg ${atex ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400'}`}>
+                    <button onClick={iniciar} disabled={!atexConfirmado || loading} className={`w-full font-bold py-4 rounded-xl shadow-lg transition-colors text-white text-lg ${atexConfirmado ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400'}`}>
                         {loading ? 'Iniciando...' : 'INICIAR SALIDA A TERRENO'}
                     </button>
                 </div>
@@ -199,7 +200,7 @@
         }
 
         // ==========================================
-        // COMPONENTE: RONDA TERRENO (TALAGANTE)
+        // COMPONENTE: RONDA TERRENO 
         // ==========================================
         function RondaGasometro({ turnoId, onFin }) {
             const [loading, setLoading] = useState(false);
@@ -242,11 +243,13 @@
             const isPresionCritica = p >= 25;
             const isAlturaCritica = h > 10.1;
             const isCritical = isPresionCritica || isAlturaCritica;
-
             const isPresionWarning = p > 0 && (p < 16 || p > 18) && !isPresionCritica;
             const isAlturaWarning = h > 0 && (h < 5.05 || h > 7.07) && !isAlturaCritica;
 
-            const requiresObservation = lel > 0 || fd.anclajes === 'Observacion' || fd.guarda !== 'Nivel Normal';
+            // Lógica Cruzada ATEX vs Sello de Guarda
+            const isSelloRoto = fd.guarda !== 'Nivel Normal';
+
+            const requiresObservation = lel > 0 || fd.anclajes === 'Observacion' || isSelloRoto;
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
 
             const canSubmit = !isCritical && !observationMissing && !loading;
@@ -281,8 +284,9 @@
                         </div>
                     </section>
 
+                    {/* C. INSTRUMENTACIÓN Y ZONAS LEL DIRIGIDAS */}
                     <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-                        <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">C. Instrumentacion de Campo</h3>
+                        <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">C. Instrumentacion y ATEX</h3>
                         
                         {isCritical && (
                             <div className="bg-red-600 text-white p-3 rounded-lg mb-4 text-sm font-bold shadow-md">
@@ -290,7 +294,7 @@
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="grid grid-cols-2 gap-3 mb-4">
                             <div className={`p-2 rounded-lg border-2 ${isAlturaCritica ? 'border-red-600 bg-red-50' : (isAlturaWarning ? 'border-yellow-400 bg-yellow-50' : 'border-transparent')}`}>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">Altura Interna (m)</label>
                                 <input type="number" step="0.1" name="altura" onChange={handleChange} className="w-full border p-3 rounded-lg text-center font-bold text-lg" placeholder="0.0" />
@@ -302,9 +306,18 @@
                                 {isPresionWarning && <span className="text-[10px] text-yellow-700 font-bold">Fuera de 16-18 mbar</span>}
                             </div>
                         </div>
-                        <div className={`p-4 rounded-lg border-2 ${lel > 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-200'}`}>
-                            <label className={`block text-xs font-bold uppercase mb-1 ${lel > 0 ? 'text-red-700' : 'text-gray-500'}`}>Detector % LEL</label>
-                            <input type="number" step="0.1" name="lel" onChange={handleChange} className={`w-full border p-3 rounded-lg text-center font-bold text-2xl ${lel > 0 ? 'bg-red-100 text-red-700 border-red-400' : 'bg-white'}`} placeholder="0.0" />
+
+                        <div className={`p-3 rounded-lg border-2 ${lel > 0 ? 'bg-red-50 border-red-400' : 'bg-gray-50 border-gray-200'}`}>
+                            <div className="mb-3">
+                                <p className="text-[11px] font-bold text-gray-700 uppercase mb-1">Ruta de Medición LEL Obligatoria:</p>
+                                <ul className="text-[11px] text-gray-600 list-disc pl-4 space-y-0.5">
+                                    <li>Punto 1: Borde Guarda Hidraulica</li>
+                                    <li>Punto 2: Valvula Damper y Purgas</li>
+                                    <li>Punto 3: Bridas principales</li>
+                                </ul>
+                            </div>
+                            <label className={`block text-xs font-bold uppercase mb-1 ${lel > 0 ? 'text-red-700' : 'text-gray-600'}`}>Valor LEL Maximo Encontrado (%)</label>
+                            <input type="number" step="0.1" name="lel" onChange={handleChange} className={`w-full border p-3 rounded-lg text-center font-bold text-2xl ${lel > 0 ? 'bg-red-100 text-red-700' : 'bg-white'}`} placeholder="0.0" />
                         </div>
                     </section>
 
@@ -313,11 +326,14 @@
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">Guarda Hidraulica (Sello)</label>
-                                <select name="guarda" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 font-medium">
+                                <select name="guarda" onChange={handleChange} className={`w-full border p-3 rounded-lg font-medium ${isSelloRoto ? 'bg-red-100 border-red-300 text-red-900' : 'bg-gray-50'}`}>
                                     <option value="Nivel Normal">Nivel Normal (Sello optimo)</option>
-                                    <option value="Bajo">Nivel Bajo (Requiere relleno)</option>
-                                    <option value="Rebalse">Rebalse / Apertura</option>
+                                    <option value="Bajo">Nivel Bajo (Sello Roto)</option>
+                                    <option value="Rebalse">Rebalse / Apertura de alivio</option>
                                 </select>
+                                {isSelloRoto && (
+                                    <p className="text-[11px] font-bold text-red-600 mt-2">⚠️ RIESGO ATEX: Sello roto. Atmosfera explosiva liberada en base del gasometro.</p>
+                                )}
                             </div>
                         </div>
                     </section>
@@ -325,11 +341,11 @@
                     <section className={`bg-white rounded-xl shadow-sm p-4 border-2 ${observationMissing ? 'border-red-500' : 'border-gray-200'}`}>
                         <h3 className="text-xs font-bold text-gray-800 uppercase border-b pb-2 mb-3">Registro Final</h3>
                         {observationMissing && (
-                            <p className="text-xs text-red-600 font-bold mb-2">⚠️ Debido a anomalias registradas, debes ingresar una observacion obligatoria.</p>
+                            <p className="text-xs text-red-600 font-bold mb-2">⚠️ Se detecto LEL, daños estructurales o perdida de sello hidraulico. Ingresa observacion obligatoria detallando la zona exacta.</p>
                         )}
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Observaciones Generales</label>
-                            <textarea name="observaciones" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-sm" rows="3" placeholder="Clima, olores, justificacion de alertas..."></textarea>
+                            <textarea name="observaciones" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-sm" rows="3" placeholder="Ej: LEL al 2% en la purga de la guarda hidraulica..."></textarea>
                         </div>
                     </section>
 
