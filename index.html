@@ -171,7 +171,6 @@
                         </div>
                     </div>
 
-                    {/* NUEVO MÓDULO ATEX BASADO EN PLANO 6 */}
                     <div className="bg-white rounded-xl shadow-sm p-4 border-2 border-red-100">
                         <h3 className="text-sm font-bold text-red-700 uppercase mb-3 flex items-center">
                             <span className="mr-2">🛑</span> Reconocimiento de Zonas (Plano 6)
@@ -204,6 +203,9 @@
         // ==========================================
         function RondaGasometro({ turnoId, onFin }) {
             const [loading, setLoading] = useState(false);
+            const [subiendoFoto, setSubiendoFoto] = useState(false);
+            const [fotoUrl, setFotoUrl] = useState(null);
+            
             const [fd, setFd] = useState({
                 senalizaciones: false, alarmas: true, 
                 anclajes: 'Optimo', membranaInterna: '', 
@@ -217,6 +219,29 @@
                 setFd(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
             };
 
+            const manejarSubidaFoto = async (e) => {
+                const archivo = e.target.files[0];
+                if (!archivo) return;
+
+                setSubiendoFoto(true);
+                const extension = archivo.name.split('.').pop();
+                const nombreArchivo = `${turnoId}-${Date.now()}.${extension}`;
+
+                const { error: errorSubida } = await supabaseClient.storage
+                    .from('inspeccion_fotos')
+                    .upload(nombreArchivo, archivo);
+
+                if (errorSubida) {
+                    alert("Error al subir foto: " + errorSubida.message);
+                } else {
+                    const { data } = supabaseClient.storage
+                        .from('inspeccion_fotos')
+                        .getPublicUrl(nombreArchivo);
+                    setFotoUrl(data.publicUrl);
+                }
+                setSubiendoFoto(false);
+            };
+
             const guardar = async () => {
                 setLoading(true);
                 const { error } = await supabaseClient.from('inspeccion_gasometro').insert([{
@@ -226,7 +251,8 @@
                     altura_interna_m: fd.altura || null, presion_inter_membrana_mbar: fd.presion || null, lectura_lel_porcentaje: fd.lel || null,
                     nivel_guarda_hidraulica: fd.guarda, valvula_ingreso_ok: fd.valvulaIn, trampas_drenadas: fd.trampas, 
                     valvula_damper_ok: fd.damper, tablero_electrico_ok: fd.tablero,
-                    estado_sopladores: fd.sopladores, observaciones: fd.observaciones
+                    estado_sopladores: fd.sopladores, observaciones: fd.observaciones,
+                    foto_url: fotoUrl
                 }]);
                 
                 await supabaseClient.from('registro_turnos').update({ estado_ronda: 'Completada', hora_fin: new Date() }).eq('id', turnoId);
@@ -235,7 +261,6 @@
                 else onFin();
             };
 
-            // Logica de Validacion Activa
             const p = parseFloat(fd.presion);
             const h = parseFloat(fd.altura);
             const lel = parseFloat(fd.lel);
@@ -246,13 +271,12 @@
             const isPresionWarning = p > 0 && (p < 16 || p > 18) && !isPresionCritica;
             const isAlturaWarning = h > 0 && (h < 5.05 || h > 7.07) && !isAlturaCritica;
 
-            // Lógica Cruzada ATEX vs Sello de Guarda
             const isSelloRoto = fd.guarda !== 'Nivel Normal';
 
             const requiresObservation = lel > 0 || fd.anclajes === 'Observacion' || isSelloRoto;
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
 
-            const canSubmit = !isCritical && !observationMissing && !loading;
+            const canSubmit = !isCritical && !observationMissing && !loading && !subiendoFoto;
 
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-20 font-sans">
@@ -284,7 +308,6 @@
                         </div>
                     </section>
 
-                    {/* C. INSTRUMENTACIÓN Y ZONAS LEL DIRIGIDAS */}
                     <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
                         <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">C. Instrumentacion y ATEX</h3>
                         
@@ -339,9 +362,30 @@
                     </section>
 
                     <section className={`bg-white rounded-xl shadow-sm p-4 border-2 ${observationMissing ? 'border-red-500' : 'border-gray-200'}`}>
-                        <h3 className="text-xs font-bold text-gray-800 uppercase border-b pb-2 mb-3">Registro Final</h3>
+                        <h3 className="text-xs font-bold text-gray-800 uppercase border-b pb-2 mb-3">Evidencia y Registro Final</h3>
+                        
+                        <div className="mb-4">
+                            <label className="block text-xs font-medium text-gray-500 mb-2">Captura Fotografica (Opcional/Evidencia)</label>
+                            <div className={`border-2 border-dashed rounded-lg p-4 text-center transition relative ${fotoUrl ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'}`}>
+                                {subiendoFoto ? (
+                                    <span className="text-sm font-bold text-blue-600 animate-pulse">Subiendo imagen a la nube...</span>
+                                ) : fotoUrl ? (
+                                    <div>
+                                        <span className="text-2xl mb-1 block">✅</span>
+                                        <span className="text-sm text-green-700 font-bold">Foto adjuntada con exito</span>
+                                    </div>
+                                ) : (
+                                    <label className="cursor-pointer block">
+                                        <span className="text-2xl mb-2 block">📷</span>
+                                        <span className="text-sm text-blue-600 font-bold">Tomar Foto (Terreno)</span>
+                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={manejarSubidaFoto} />
+                                    </label>
+                                )}
+                            </div>
+                        </div>
+
                         {observationMissing && (
-                            <p className="text-xs text-red-600 font-bold mb-2">⚠️ Se detecto LEL, daños estructurales o perdida de sello hidraulico. Ingresa observacion obligatoria detallando la zona exacta.</p>
+                            <p className="text-xs text-red-600 font-bold mb-2">⚠️ Se detecto LEL o perdida de sello hidraulico. Ingresa observacion obligatoria detallando la zona exacta.</p>
                         )}
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Observaciones Generales</label>
@@ -388,7 +432,7 @@
                             <div className="bg-[#2a2a2a] p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm border border-zinc-700">
                                 <div className="text-6xl mb-6">✅</div>
                                 <h2 className="text-2xl font-bold text-white tracking-wide">Registro Completado</h2>
-                                <p className="text-zinc-400 text-sm mt-2 mb-8">La ronda del gasometro ha sido asegurada en la base de datos.</p>
+                                <p className="text-zinc-400 text-sm mt-2 mb-8">La ronda y la evidencia fotografica han sido aseguradas en el servidor.</p>
                                 <button onClick={() => setVista('inicio')} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-xl shadow-lg transition-all uppercase tracking-wider">
                                     Menu Principal
                                 </button>
