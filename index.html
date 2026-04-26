@@ -21,6 +21,54 @@
         const { useState, useEffect } = React;
 
         // ==========================================
+        // COMPONENTES AUXILIARES
+        // ==========================================
+        // Sub-componente para manejar subida de fotos por cada Punto de Control
+        function FotoUploader({ idCampo, turnoId, onFotoSubida, titulo }) {
+            const [subiendo, setSubiendo] = useState(false);
+            const [url, setUrl] = useState(null);
+
+            const manejarSubida = async (e) => {
+                const archivo = e.target.files[0];
+                if (!archivo) return;
+                setSubiendo(true);
+                const ext = archivo.name.split('.').pop();
+                const nombreArchivo = `${turnoId}-${idCampo}-${Date.now()}.${ext}`;
+
+                const { error } = await supabaseClient.storage.from('inspeccion_fotos').upload(nombreArchivo, archivo);
+                if (error) {
+                    alert("Error subiendo foto: " + error.message);
+                } else {
+                    const { data } = supabaseClient.storage.from('inspeccion_fotos').getPublicUrl(nombreArchivo);
+                    setUrl(data.publicUrl);
+                    onFotoSubida(idCampo, data.publicUrl);
+                }
+                setSubiendo(false);
+            };
+
+            return (
+                <div className={`mt-3 p-3 border-2 border-dashed rounded-lg text-center transition ${url ? 'border-emerald-400 bg-emerald-50' : 'border-blue-300 bg-blue-50'}`}>
+                    {subiendo ? (
+                        <span className="text-sm font-bold text-blue-600 animate-pulse">Subiendo evidencia...</span>
+                    ) : url ? (
+                        <div className="flex items-center justify-center space-x-2">
+                            <span className="text-xl">✅</span>
+                            <span className="text-xs text-emerald-700 font-bold">Evidencia Capturada</span>
+                        </div>
+                    ) : (
+                        <label className="cursor-pointer flex flex-col items-center justify-center">
+                            <span className="text-2xl mb-1">📷</span>
+                            <span className="text-xs text-blue-700 font-bold uppercase">{titulo}</span>
+                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={manejarSubida} />
+                        </label>
+                    )}
+                </div>
+            );
+        }
+
+        const Fantasma = ({ valor }) => valor != null ? <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold">Ant: {valor}</span> : null;
+
+        // ==========================================
         // COMPONENTE: LOGIN 
         // ==========================================
         function PantallaLogin() {
@@ -39,33 +87,16 @@
 
             return (
                 <div className="min-h-screen bg-[#1e1e1e] flex items-center justify-center p-4 font-sans">
-                    <div className="bg-[#2a2a2a] w-full max-w-md rounded-xl p-8 relative shadow-2xl border border-zinc-700">
+                    <div className="bg-[#2a2a2a] w-full max-w-md rounded-xl p-8 shadow-2xl border border-zinc-700">
                         <div className="flex items-center space-x-4 mb-8">
-                            <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center p-2 shadow-lg">
-                                <span className="font-bold text-zinc-900">RS</span>
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-white tracking-wide">RondaSync</h1>
-                                <p className="text-xs text-zinc-400 uppercase tracking-widest">PTAR Talagante</p>
-                            </div>
+                            <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center p-2 shadow-lg"><span className="font-bold text-zinc-900">RS</span></div>
+                            <div><h1 className="text-2xl font-bold text-white tracking-wide">RondaSync</h1><p className="text-xs text-zinc-400 uppercase tracking-widest">PTAR Talagante</p></div>
                         </div>
-                        <div className="mb-8">
-                            <h2 className="text-3xl font-bold text-white mb-2">Bienvenido</h2>
-                            <p className="text-zinc-400 text-sm">Ingresa tus credenciales para continuar</p>
-                        </div>
+                        <h2 className="text-3xl font-bold text-white mb-6">Bienvenido</h2>
                         <form onSubmit={manejarLogin} className="space-y-6">
-                            <div>
-                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Email</label>
-                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:border-amber-500 outline-none" required />
-                            </div>
-                            <div className="relative">
-                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Contraseña</label>
-                                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:border-amber-500 outline-none" required />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-10 text-zinc-500">👁️</button>
-                            </div>
-                            <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-lg uppercase tracking-wider">
-                                {loading ? 'Ingresando...' : 'Ingresar'}
-                            </button>
+                            <div><label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:border-amber-500 outline-none" required /></div>
+                            <div className="relative"><label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Contraseña</label><input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:border-amber-500 outline-none" required /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-10 text-zinc-500">👁️</button></div>
+                            <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-lg uppercase tracking-wider">{loading ? 'Ingresando...' : 'Ingresar'}</button>
                         </form>
                     </div>
                 </div>
@@ -78,99 +109,50 @@
         function VistaResumen({ onComplete }) {
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
-                        <h2 className="text-xl font-bold">Resumen Turno Anterior</h2>
-                    </div>
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Resumen Turno Anterior</h2></div>
                     <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 shadow-sm">
                         <h3 className="text-sm font-bold text-yellow-800 uppercase mb-3">Novedades Reportadas</h3>
-                        <ul className="text-sm text-yellow-900 space-y-2 list-disc pl-4">
-                            <li>Compresor 2 presento leve alza de temperatura al mediodia.</li>
-                            <li>Nivel de guarda hidraulica rellenado a las 18:00hrs.</li>
-                            <li>Antorcha 1 no encendio en el primer intento, requirio rearme manual.</li>
-                        </ul>
+                        <ul className="text-sm text-yellow-900 space-y-2 list-disc pl-4"><li>Operación normal, sin novedades en equipos mecánicos.</li></ul>
                     </div>
-                    <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg mt-8">
-                        HE LEIDO Y COMPRENDIDO LAS NOVEDADES
-                    </button>
+                    <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg mt-8">HE LEIDO Y COMPRENDIDO</button>
                 </div>
             );
         }
 
         function VistaScada({ datosGuardados, prevData, onComplete }) {
             const [scada, setScada] = useState(datosGuardados || {});
-            
-            const manejarGuardado = () => onComplete(scada);
-
-            // Helper para dibujar la etiqueta del valor fantasma (Memoria Operativa)
-            const Fantasma = ({ valor }) => valor != null ? <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold">Ant: {valor}</span> : null;
-
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
-                        <h2 className="text-xl font-bold">Ingreso SCADA (WinCC)</h2>
-                    </div>
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Ingreso SCADA (WinCC)</h2></div>
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-5">
-                        
                         <div>
                             <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Digestor</h4>
                             <div className="grid grid-cols-3 gap-2">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Nivel (cm)</label><Fantasma valor={prevData?.scada_dig_nivel_cm} /></div>
-                                    <input type="number" value={scada.dig_nivel||''} onChange={e => setScada({...scada, dig_nivel: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Presion (mbar)</label><Fantasma valor={prevData?.scada_dig_presion_mbar} /></div>
-                                    <input type="number" value={scada.dig_presion||''} onChange={e => setScada({...scada, dig_presion: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Temp (°C)</label><Fantasma valor={prevData?.scada_dig_temp_c} /></div>
-                                    <input type="number" value={scada.dig_temp||''} onChange={e => setScada({...scada, dig_temp: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Nivel(cm)</label><Fantasma valor={prevData?.scada_dig_nivel_cm} /></div><input type="number" value={scada.dig_nivel||''} onChange={e => setScada({...scada, dig_nivel: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Pres.(mbar)</label><Fantasma valor={prevData?.scada_dig_presion_mbar} /></div><input type="number" value={scada.dig_presion||''} onChange={e => setScada({...scada, dig_presion: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Temp(°C)</label><Fantasma valor={prevData?.scada_dig_temp_c} /></div><input type="number" value={scada.dig_temp||''} onChange={e => setScada({...scada, dig_temp: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
                             </div>
                         </div>
-
                         <div>
                             <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Gasometro</h4>
                             <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Nivel (%)</label><Fantasma valor={prevData?.scada_nivel_gasometro} /></div>
-                                    <input type="number" value={scada.gas_nivel||''} onChange={e => setScada({...scada, gas_nivel: e.target.value})} className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Presion (mbar)</label><Fantasma valor={prevData?.scada_presion_mbar} /></div>
-                                    <input type="number" value={scada.gas_presion||''} onChange={e => setScada({...scada, gas_presion: e.target.value})} className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" />
-                                </div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Nivel(%)</label><Fantasma valor={prevData?.scada_nivel_gasometro} /></div><input type="number" value={scada.gas_nivel||''} onChange={e => setScada({...scada, gas_nivel: e.target.value})} className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Pres.(mbar)</label><Fantasma valor={prevData?.scada_presion_mbar} /></div><input type="number" value={scada.gas_presion||''} onChange={e => setScada({...scada, gas_presion: e.target.value})} className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" /></div>
                             </div>
                         </div>
-
                         <div>
                             <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Compresores y Consumos</h4>
                             <div className="grid grid-cols-2 gap-2 mb-2">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Comp. (m³/h)</label><Fantasma valor={prevData?.scada_flujo_biogas_nm3h} /></div>
-                                    <input type="number" value={scada.comp_flujo||''} onChange={e => setScada({...scada, comp_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">P. Impulsion (mbar)</label><Fantasma valor={prevData?.scada_comp_presion_imp_mbar} /></div>
-                                    <input type="number" value={scada.comp_pres_imp||''} onChange={e => setScada({...scada, comp_pres_imp: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Comp.</label><Fantasma valor={prevData?.scada_flujo_biogas_nm3h} /></div><input type="number" value={scada.comp_flujo||''} onChange={e => setScada({...scada, comp_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Pres. Imp.</label><Fantasma valor={prevData?.scada_comp_presion_imp_mbar} /></div><input type="number" value={scada.comp_pres_imp||''} onChange={e => setScada({...scada, comp_pres_imp: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
                             </div>
                             <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Calderas</label><Fantasma valor={prevData?.scada_cald_flujo_m3h} /></div>
-                                    <input type="number" value={scada.cald_flujo||''} onChange={e => setScada({...scada, cald_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Antorchas</label><Fantasma valor={prevData?.scada_ant_flujo_m3h} /></div>
-                                    <input type="number" value={scada.ant_flujo||''} onChange={e => setScada({...scada, ant_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Cald.</label><Fantasma valor={prevData?.scada_cald_flujo_m3h} /></div><input type="number" value={scada.cald_flujo||''} onChange={e => setScada({...scada, cald_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Antorchas</label><Fantasma valor={prevData?.scada_ant_flujo_m3h} /></div><input type="number" value={scada.ant_flujo||''} onChange={e => setScada({...scada, ant_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
                             </div>
                         </div>
-
                     </div>
-                    <button onClick={manejarGuardado} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg mt-8">
-                        GUARDAR DATOS SCADA Y VOLVER
-                    </button>
+                    <button onClick={() => onComplete(scada)} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg mt-8">GUARDAR SCADA</button>
                 </div>
             );
         }
@@ -178,39 +160,16 @@
         function VistaRiesgos({ onComplete }) {
             const [c, setC] = useState({ epp1:false, epp2:false, epp3:false, epp4:false, ax1:false, ax2:false, ax3:false });
             const listo = c.epp1 && c.epp2 && c.epp3 && c.epp4 && c.ax1 && c.ax2 && c.ax3;
-
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
-                        <h2 className="text-xl font-bold">Protocolos de Seguridad</h2>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 border-b pb-2">Uso de EPP Obligatorio</h3>
-                        <div className="space-y-2">
-                            <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-5 w-5 text-blue-600"/> <span className="text-sm">Casco, Lentes y Zapatos dieléctricos</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-5 w-5 text-blue-600"/> <span className="text-sm">Detector de Gases (LEL/H2S) encendido</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-5 w-5 text-blue-600"/> <span className="text-sm">Radio intrinsecamente segura</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-5 w-5 text-blue-600"/> <span className="text-sm">Ausencia de telefonos celulares estandar</span></label>
-                        </div>
-                    </div>
-                    <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 p-4">
-                        <h3 className="text-sm font-bold text-red-800 uppercase mb-3 border-b border-red-200 pb-2">Plano de Riesgo ATEX</h3>
-                        <div className="space-y-2">
-                            <label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax1:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Zona 1: 1.5m de Guarda Hidraulica</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax2:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Zona 1: 1.0m de Valvulas y Purgas</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax3:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Zona 2: 0.35m de Bridas e Instrumentos</span></label>
-                        </div>
-                    </div>
-                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-bold py-4 rounded-xl shadow-lg mt-8 ${listo ? 'bg-emerald-600' : 'bg-gray-400'}`}>
-                        CONFIRMAR PROTOCOLOS Y VOLVER
-                    </button>
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Protocolos de Seguridad</h2></div>
+                    <div className="bg-white rounded-xl shadow-sm border p-4"><h3 className="text-sm font-bold text-gray-800 uppercase mb-3 border-b pb-2">Uso de EPP</h3><div className="space-y-2"><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Casco, Lentes y Zapatos</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Detector de Gases (LEL/H2S) ON</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Radio intrinsecamente segura</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Sin telefonos celulares estandar</span></label></div></div>
+                    <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 p-4"><h3 className="text-sm font-bold text-red-800 uppercase mb-3 border-b border-red-200 pb-2">Riesgo ATEX</h3><div className="space-y-2"><label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax1:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z1: 1.5m de Guarda Hidraulica</span></label><label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax2:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z1: 1.0m de Valvulas y Purgas</span></label><label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax3:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z2: 0.35m de Bridas/Inst.</span></label></div></div>
+                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-bold py-4 rounded-xl shadow-lg mt-8 ${listo ? 'bg-emerald-600' : 'bg-gray-400'}`}>CONFIRMAR Y VOLVER</button>
                 </div>
             );
         }
 
-        // ==========================================
-        // COMPONENTE: HUB CENTRAL
-        // ==========================================
         function HubCentral({ userEmail, prevTurnoData, avanzarAInstalaciones }) {
             const [fechaHora, setFechaHora] = useState(new Date());
             const [turnoDetectado, setTurnoDetectado] = useState('');
@@ -233,47 +192,21 @@
             return (
                 <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans">
                     <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl flex flex-col justify-between">
-                        <div className="flex justify-between items-start border-b border-slate-600 pb-3 mb-3">
-                            <div><h1 className="text-2xl font-black tracking-wide">RondaSync</h1><p className="text-xs text-amber-400 font-bold uppercase tracking-widest mt-1">PTAR Talagante</p></div>
-                            <button onClick={() => supabaseClient.auth.signOut()} className="text-[10px] font-bold bg-red-500/20 text-red-300 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition">SALIR</button>
-                        </div>
-                        <div className="flex justify-between items-end">
-                            <div><p className="text-xs text-slate-400 uppercase">Bienvenido</p><p className="text-sm font-medium">{userEmail}</p></div>
-                            <div className="text-right"><p className="text-sm font-bold text-slate-200">{fechaHora.toLocaleDateString()}</p><p className="text-2xl font-light text-white">{fechaHora.toLocaleTimeString()}</p></div>
-                        </div>
+                        <div className="flex justify-between items-start border-b border-slate-600 pb-3 mb-3"><div><h1 className="text-2xl font-black tracking-wide">RondaSync</h1><p className="text-xs text-amber-400 font-bold uppercase mt-1">PTAR Talagante</p></div><button onClick={() => supabaseClient.auth.signOut()} className="text-[10px] font-bold bg-red-500/20 text-red-300 px-2 py-1 rounded">SALIR</button></div>
+                        <div className="flex justify-between items-end"><div><p className="text-xs text-slate-400 uppercase">Bienvenido</p><p className="text-sm font-medium">{userEmail}</p></div><div className="text-right"><p className="text-sm font-bold text-slate-200">{fechaHora.toLocaleDateString()}</p><p className="text-2xl font-light text-white">{fechaHora.toLocaleTimeString()}</p></div></div>
                     </div>
-
                     <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
-                        <div>
-                            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Turno de Operacion</p>
-                            <select value={turnoDetectado} onChange={(e) => setTurnoDetectado(e.target.value)} className="font-bold text-lg text-gray-800 bg-transparent outline-none cursor-pointer">
-                                <option value="08:00 a 20:00">08:00 a 20:00 (Dia)</option>
-                                <option value="20:00 a 08:00">20:00 a 08:00 (Noche)</option>
-                            </select>
-                        </div>
+                        <div><p className="text-xs text-gray-500 font-bold uppercase mb-1">Turno de Operacion</p><select value={turnoDetectado} onChange={(e) => setTurnoDetectado(e.target.value)} className="font-bold text-lg text-gray-800 bg-transparent outline-none cursor-pointer"><option value="08:00 a 20:00">08:00 a 20:00 (Dia)</option><option value="20:00 a 08:00">20:00 a 08:00 (Noche)</option></select></div>
                         <div className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Auto</div>
                     </div>
-
                     <div className="space-y-3">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase px-1">Requisitos Previos a Terreno</h3>
-                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'resumen'})} className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition ${hubState.resumenOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}>
-                            <div className="flex items-center space-x-3"><span className={`text-xl ${hubState.resumenOk ? 'text-emerald-500' : 'text-gray-400'}`}>{hubState.resumenOk ? '✅' : '📄'}</span><span className={`font-bold ${hubState.resumenOk ? 'text-emerald-800' : 'text-gray-700'}`}>1. Revisar Turno Anterior</span></div>
-                            {!hubState.resumenOk && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-bold">Pendiente</span>}
-                        </button>
-                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'scada'})} className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition ${scadaOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}>
-                            <div className="flex items-center space-x-3"><span className={`text-xl ${scadaOk ? 'text-emerald-500' : 'text-gray-400'}`}>{scadaOk ? '✅' : '🖥️'}</span><span className={`font-bold ${scadaOk ? 'text-emerald-800' : 'text-gray-700'}`}>2. Ingreso Datos SCADA</span></div>
-                            {!scadaOk && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-bold">Pendiente</span>}
-                        </button>
-                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'riesgos'})} className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition ${hubState.riesgosOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}>
-                            <div className="flex items-center space-x-3"><span className={`text-xl ${hubState.riesgosOk ? 'text-emerald-500' : 'text-gray-400'}`}>{hubState.riesgosOk ? '✅' : '🛑'}</span><span className={`font-bold ${hubState.riesgosOk ? 'text-emerald-800' : 'text-gray-700'}`}>3. Riesgos, ATEX y EPP</span></div>
-                            {!hubState.riesgosOk && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-bold">Pendiente</span>}
-                        </button>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase px-1">Requisitos Previos</h3>
+                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'resumen'})} className={`w-full flex justify-between p-4 rounded-xl border-2 transition ${hubState.resumenOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}><div className="flex items-center space-x-3"><span className="text-xl">{hubState.resumenOk ? '✅' : '📄'}</span><span className={`font-bold ${hubState.resumenOk ? 'text-emerald-800' : 'text-gray-700'}`}>1. Turno Anterior</span></div></button>
+                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'scada'})} className={`w-full flex justify-between p-4 rounded-xl border-2 transition ${scadaOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}><div className="flex items-center space-x-3"><span className="text-xl">{scadaOk ? '✅' : '🖥️'}</span><span className={`font-bold ${scadaOk ? 'text-emerald-800' : 'text-gray-700'}`}>2. Datos SCADA</span></div></button>
+                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'riesgos'})} className={`w-full flex justify-between p-4 rounded-xl border-2 transition ${hubState.riesgosOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}><div className="flex items-center space-x-3"><span className="text-xl">{hubState.riesgosOk ? '✅' : '🛑'}</span><span className={`font-bold ${hubState.riesgosOk ? 'text-emerald-800' : 'text-gray-700'}`}>3. Riesgos y EPP</span></div></button>
                     </div>
-
                     <div className="pt-4 pb-10">
-                        <button onClick={() => avanzarAInstalaciones(turnoDetectado, hubState.scadaData)} disabled={!listoParaRonda} className={`w-full font-black py-5 rounded-2xl shadow-xl text-lg uppercase tracking-widest transition-all transform ${listoParaRonda ? 'bg-amber-500 text-zinc-900 hover:scale-[1.02]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
-                            COMENZAR RONDA FÍSICA
-                        </button>
+                        <button onClick={() => avanzarAInstalaciones(turnoDetectado, hubState.scadaData)} disabled={!listoParaRonda} className={`w-full font-black py-5 rounded-2xl shadow-xl text-lg uppercase tracking-widest transition-all ${listoParaRonda ? 'bg-amber-500 text-zinc-900' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>COMENZAR RONDA FÍSICA</button>
                     </div>
                 </div>
             );
@@ -285,90 +218,131 @@
         function MenuInstalaciones({ areasDone, irAGasometro, finalizarTurno, loadingDb }) {
             return (
                 <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-100">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg flex items-center justify-between">
-                        <h2 className="text-lg font-bold">Ronda en Curso</h2>
-                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded animate-pulse">EN TERRENO</span>
-                    </div>
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg flex items-center justify-between"><h2 className="text-lg font-bold">Ronda en Curso</h2><span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded animate-pulse">EN TERRENO</span></div>
                     <div>
                         <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 px-1">Selecciona Instalacion</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <button disabled className="bg-gray-200 p-4 rounded-xl border border-gray-300 opacity-60 text-left"><span className="block text-xl mb-2">🦠</span><span className="font-bold text-sm text-gray-600">Biodigestor</span></button>
+                            <button disabled className="bg-gray-200 p-4 rounded-xl border opacity-60 text-left"><span className="block text-xl mb-2">🦠</span><span className="font-bold text-sm text-gray-600">Biodigestor</span></button>
                             <button onClick={irAGasometro} className={`p-4 rounded-xl border-2 text-left shadow-sm transition ${areasDone.gasometro ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-blue-200'}`}>
                                 <div className="flex justify-between items-start"><span className="block text-xl mb-2">🏗️</span>{areasDone.gasometro && <span className="text-emerald-500 text-lg">✅</span>}</div>
                                 <span className={`font-bold text-sm ${areasDone.gasometro ? 'text-emerald-800' : 'text-blue-900'}`}>Gasometro</span>
                             </button>
-                            <button disabled className="bg-gray-200 p-4 rounded-xl border border-gray-300 opacity-60 text-left"><span className="block text-xl mb-2">⚙️</span><span className="font-bold text-sm text-gray-600">Compresores</span></button>
-                            <button disabled className="bg-gray-200 p-4 rounded-xl border border-gray-300 opacity-60 text-left"><span className="block text-xl mb-2">🔥</span><span className="font-bold text-sm text-gray-600">Calderas</span></button>
-                            <button disabled className="bg-gray-200 p-4 rounded-xl border border-gray-300 opacity-60 text-left"><span className="block text-xl mb-2">🗼</span><span className="font-bold text-sm text-gray-600">Antorcha 1</span></button>
-                            <button disabled className="bg-gray-200 p-4 rounded-xl border border-gray-300 opacity-60 text-left"><span className="block text-xl mb-2">🗼</span><span className="font-bold text-sm text-gray-600">Antorcha 2</span></button>
+                            <button disabled className="bg-gray-200 p-4 rounded-xl border opacity-60 text-left"><span className="block text-xl mb-2">⚙️</span><span className="font-bold text-sm text-gray-600">Compresores</span></button>
+                            <button disabled className="bg-gray-200 p-4 rounded-xl border opacity-60 text-left"><span className="block text-xl mb-2">🔥</span><span className="font-bold text-sm text-gray-600">Calderas</span></button>
+                            <button disabled className="bg-gray-200 p-4 rounded-xl border opacity-60 text-left"><span className="block text-xl mb-2">🗼</span><span className="font-bold text-sm text-gray-600">Antorcha 1</span></button>
+                            <button disabled className="bg-gray-200 p-4 rounded-xl border opacity-60 text-left"><span className="block text-xl mb-2">🗼</span><span className="font-bold text-sm text-gray-600">Antorcha 2</span></button>
                         </div>
                     </div>
                     <div className="pt-10 pb-10 border-t border-gray-300">
-                        <button onClick={finalizarTurno} disabled={loadingDb} className="w-full bg-zinc-800 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">
-                            {loadingDb ? 'Guardando en Servidor...' : 'CERRAR Y FINALIZAR TURNO'}
-                        </button>
+                        <button onClick={finalizarTurno} disabled={loadingDb} className="w-full bg-zinc-800 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">{loadingDb ? 'Guardando en Servidor...' : 'CERRAR Y FINALIZAR TURNO'}</button>
                     </div>
                 </div>
             );
         }
 
         // ==========================================
-        // COMPONENTE: FORMULARIO GASÓMETRO 
+        // NUEVO FORMULARIO GASÓMETRO (PUNTOS DE CONTROL)
         // ==========================================
-        function FormularioGasometro({ prevData, onTerminado }) {
-            const [fd, setFd] = useState({ altura:'', presion:'', lel:'', guarda:'Nivel Normal', observaciones:'' });
+        function FormularioGasometro({ turnoId, prevData, onTerminado }) {
+            const [fd, setFd] = useState({ anclajes:'Optimo', altura:'', presion:'', lel:'', guarda:'Nivel Normal', sopladores_ok: true, observaciones:'' });
+            const [fotos, setFotos] = useState({ anclaje: null, instrumentos: null, guarda: null, sopladores: null });
+
+            const manejarFoto = (campo, url) => setFotos(prev => ({ ...prev, [campo]: url }));
+
             const p = parseFloat(fd.presion); const h = parseFloat(fd.altura); const lel = parseFloat(fd.lel);
             const isCritical = p >= 25 || h > 10.1;
-            const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal';
+            const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || !fd.sopladores_ok;
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
-            const canSubmit = !isCritical && !observationMissing;
-
-            const Fantasma = ({ valor }) => valor != null ? <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold">Ant: {valor}</span> : null;
+            
+            // Regla de Oro: TODAS las fotos son obligatorias para poder enviar
+            const fotosCompletas = fotos.anclaje && fotos.instrumentos && fotos.guarda && fotos.sopladores;
+            // Además, los campos numéricos no pueden estar vacíos
+            const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
+            
+            const canSubmit = fotosCompletas && datosCompletos && !isCritical && !observationMissing;
 
             return (
-                <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 bg-gray-50 font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg flex items-center mb-6">
-                        <span className="text-2xl mr-3">🏗️</span><h2 className="text-xl font-bold">Inspeccion Gasometro</h2>
+                <div className="p-4 max-w-md mx-auto space-y-5 min-h-screen pb-10 bg-gray-50 font-sans">
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg flex items-center mb-4 sticky top-0 z-10">
+                        <span className="text-2xl mr-3">🏗️</span><h2 className="text-lg font-bold">Puntos de Control: Gasometro</h2>
                     </div>
                     
-                    <div className="bg-white p-4 rounded-xl border shadow-sm">
-                        <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">Valores de Campo</h3>
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                            <div>
-                                <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-500 font-bold">Altura (m)</label><Fantasma valor={prevData?.altura_interna_m} /></div>
-                                <input type="number" onChange={e=>setFd({...fd, altura:e.target.value})} className="w-full border p-2 rounded text-center font-bold text-lg"/>
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-500 font-bold">Presion (mbar)</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div>
-                                <input type="number" onChange={e=>setFd({...fd, presion:e.target.value})} className="w-full border p-2 rounded text-center font-bold text-lg"/>
-                            </div>
+                    {/* PC 1: Anclajes */}
+                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
+                        <div className="flex justify-between items-center border-b pb-2 mb-3">
+                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-1: Sistema de Anclaje</h3>
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Flanges</span>
                         </div>
-                        <div className={`p-3 rounded-lg border-2 ${lel > 0 ? 'bg-red-50 border-red-400' : 'bg-gray-50 border-gray-200'}`}>
-                            <div className="flex justify-between items-center mb-1"><label className="text-xs font-bold uppercase text-gray-600">Detector LEL Maximo (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
-                            <input type="number" onChange={e=>setFd({...fd, lel:e.target.value})} className="w-full border p-2 rounded text-center font-bold text-xl"/>
+                        <p className="text-xs text-gray-500 mb-2">Verifique integridad estructural de pernos de anclaje de la base.</p>
+                        <select onChange={e=>setFd({...fd, anclajes:e.target.value})} className={`w-full border p-3 rounded font-bold ${fd.anclajes !== 'Optimo' ? 'bg-yellow-50 text-yellow-800' : 'bg-gray-50'}`}>
+                            <option value="Optimo">Estado Optimo (Sin deformaciones/fugas)</option>
+                            <option value="Observacion">Con Observacion / Requiere apriete</option>
+                        </select>
+                        <FotoUploader idCampo="anclaje" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Tomar Foto Anclaje Base" />
+                    </div>
+
+                    {/* PC 2: Instrumentos */}
+                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
+                        <div className="flex justify-between items-center border-b pb-2 mb-3">
+                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-2: Lecturas Intermembrana</h3>
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Escotilla</span>
                         </div>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-500 font-bold">Altura (m)</label><Fantasma valor={prevData?.altura_interna_m} /></div><input type="number" onChange={e=>setFd({...fd, altura:e.target.value})} className="w-full border p-2 rounded text-center font-bold text-lg"/></div>
+                            <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-500 font-bold">Pres. (mbar)</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div><input type="number" onChange={e=>setFd({...fd, presion:e.target.value})} className="w-full border p-2 rounded text-center font-bold text-lg"/></div>
+                        </div>
+                        <div className="mb-2">
+                            <div className="flex justify-between mb-1"><label className="text-xs text-gray-500 font-bold">LEL Maximo (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
+                            <input type="number" onChange={e=>setFd({...fd, lel:e.target.value})} className={`w-full border p-2 rounded text-center font-bold text-xl ${lel > 0 ? 'bg-red-100 text-red-700' : 'bg-gray-50'}`}/>
+                        </div>
+                        <FotoUploader idCampo="instrumentos" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Tomar Foto Sensores (Manometro/Visor)" />
                     </div>
 
+                    {/* PC 3: Guarda Hidráulica */}
+                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
+                        <div className="flex justify-between items-center border-b pb-2 mb-3">
+                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-3: Sello de Agua</h3>
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Guarda H.</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-500 font-bold">Nivel de Liquido en Visor</label><Fantasma valor={prevData?.nivel_guarda_hidraulica} /></div>
+                        <select onChange={e=>setFd({...fd, guarda:e.target.value})} className={`w-full border p-3 rounded font-bold ${fd.guarda !== 'Nivel Normal' ? 'bg-red-100 text-red-800' : 'bg-gray-50'}`}>
+                            <option>Nivel Normal</option><option>Bajo (Perdida de sello)</option><option>Rebalse</option>
+                        </select>
+                        <FotoUploader idCampo="guarda" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Tomar Foto Visor de Nivel" />
+                    </div>
+
+                    {/* PC 4: Sistema de Aire */}
+                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
+                        <div className="flex justify-between items-center border-b pb-2 mb-3">
+                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-4: Sopladores y Damper</h3>
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Iny. Aire</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">Inspeccione estado de los 2 sopladores y posicion de valvula damper.</p>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded border mb-2 cursor-pointer">
+                            <input type="checkbox" defaultChecked onChange={e=>setFd({...fd, sopladores_ok: e.target.checked})} className="h-6 w-6 text-blue-600" />
+                            <span className="text-sm font-bold text-gray-700">Equipos Operativos (Sin ruidos/vibraciones anormales)</span>
+                        </label>
+                        <FotoUploader idCampo="sopladores" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Tomar Foto Sopladores/Damper" />
+                    </div>
+
+                    {/* CIERRE */}
                     <div className="bg-white p-4 rounded-xl border shadow-sm">
-                         <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-500 font-bold">Guarda Hidraulica</label><Fantasma valor={prevData?.nivel_guarda_hidraulica} /></div>
-                         <select onChange={e=>setFd({...fd, guarda:e.target.value})} className="w-full border p-2 rounded font-bold"><option>Nivel Normal</option><option>Bajo</option><option>Rebalse</option></select>
+                         <label className="text-xs text-gray-500 font-bold">Observaciones Generales</label>
+                         {observationMissing && <p className="text-xs text-red-600 font-bold my-1">⚠️ Observacion OBLIGATORIA por anomalias detectadas.</p>}
+                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className="w-full border p-2 rounded mt-1 bg-gray-50 text-sm" rows="3" placeholder="Detalle cualquier anomalia mecanica o de proceso..."></textarea>
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border shadow-sm">
-                         <label className="text-xs text-gray-500 font-bold">Observaciones</label>
-                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className="w-full border p-2 rounded mt-1" rows="3"></textarea>
-                    </div>
-
-                    <button onClick={() => onTerminado(fd)} disabled={!canSubmit} className={`w-full text-white font-bold py-4 rounded-xl shadow-lg mt-8 ${canSubmit ? 'bg-emerald-600' : 'bg-gray-400'}`}>
-                        GUARDAR GASOMETRO Y VOLVER AL MENU
+                    {!fotosCompletas && <p className="text-center text-xs text-red-600 font-bold px-4">Debe capturar las 4 fotografias obligatorias para habilitar el guardado.</p>}
+                    
+                    <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-5 rounded-xl shadow-xl mt-4 uppercase tracking-widest transition-colors ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400 cursor-not-allowed'}`}>
+                        GUARDAR GASOMETRO
                     </button>
                 </div>
             );
         }
 
-
         // ==========================================
-        // APP PRINCIPAL (CONTROL CENTRAL)
+        // APP PRINCIPAL
         // ==========================================
         function App() {
             const [user, setUser] = useState(null);
@@ -376,10 +350,11 @@
             const [pantallaActiva, setPantallaActiva] = useState('hub');
             const [turnoContexto, setTurnoContexto] = useState({ shift: '', scada: null, turnoIdBd: null });
             const [areasStatus, setAreasStatus] = useState({ gasometro: false });
+            
             const [datosGasometroTemp, setDatosGasometroTemp] = useState(null);
+            const [fotosGasometroTemp, setFotosGasometroTemp] = useState(null);
+            
             const [isSavingDb, setIsSavingDb] = useState(false);
-
-            // Memoria Operativa (Fantasmas)
             const [valoresAnteriores, setValoresAnteriores] = useState({ turno: null, gasometro: null });
 
             useEffect(() => {
@@ -395,7 +370,6 @@
                 return () => subscription.unsubscribe();
             }, []);
 
-            // Función que descarga silenciosamente el último turno registrado
             const cargarMemoriaOperativa = async () => {
                 const { data: turnos } = await supabaseClient.from('registro_turnos').select('*').order('created_at', { ascending: false }).limit(1);
                 const { data: gasometros } = await supabaseClient.from('inspeccion_gasometro').select('*').order('created_at', { ascending: false }).limit(1);
@@ -410,44 +384,53 @@
 
             const manejarArranqueRonda = async (shiftDetectado, scadaData) => {
                 setIsSavingDb(true);
-                const { data, error } = await supabaseClient.from('registro_turnos').insert([{
-                    operador_nombre: user.email,
-                    tipo_turno: shiftDetectado,
-                    scada_nivel_gasometro: scadaData.gas_nivel || null,
-                    scada_presion_mbar: scadaData.gas_presion || null,
-                    scada_flujo_biogas_nm3h: scadaData.comp_flujo || null,
-                    scada_dig_nivel_cm: scadaData.dig_nivel || null,
-                    scada_dig_presion_mbar: scadaData.dig_presion || null,
-                    scada_dig_temp_c: scadaData.dig_temp || null,
-                    scada_comp_presion_imp_mbar: scadaData.comp_pres_imp || null,
-                    scada_cald_flujo_m3h: scadaData.cald_flujo || null,
-                    scada_ant_flujo_m3h: scadaData.ant_flujo || null,
-                    atex_confirmado: true,
-                    estado_ronda: 'En Terreno'
-                }]).select();
-
+                // Usamos un ID temporal hasta el guardado final para nombrar las fotos
+                const tempId = 'Turno-' + Date.now(); 
+                setTurnoContexto({ shift: shiftDetectado, scada: scadaData, turnoIdBd: tempId });
                 setIsSavingDb(false);
-                if (error) {
-                    alert("Error conectando con la base central: " + error.message);
-                } else {
-                    setTurnoContexto({ shift: shiftDetectado, scada: scadaData, turnoIdBd: data[0].id });
-                    setPantallaActiva('instalaciones');
-                }
+                setPantallaActiva('instalaciones');
             };
 
             const manejarFinalizacionTotal = async () => {
                 setIsSavingDb(true);
-                if (areasStatus.gasometro && datosGasometroTemp) {
+                
+                // 1. Crear el Turno Padre
+                const { data: turnoData, error: errorTurno } = await supabaseClient.from('registro_turnos').insert([{
+                    operador_nombre: user.email,
+                    tipo_turno: turnoContexto.shift,
+                    scada_nivel_gasometro: turnoContexto.scada.gas_nivel || null,
+                    scada_presion_mbar: turnoContexto.scada.gas_presion || null,
+                    scada_flujo_biogas_nm3h: turnoContexto.scada.comp_flujo || null,
+                    scada_dig_nivel_cm: turnoContexto.scada.dig_nivel || null,
+                    scada_dig_presion_mbar: turnoContexto.scada.dig_presion || null,
+                    scada_dig_temp_c: turnoContexto.scada.dig_temp || null,
+                    scada_comp_presion_imp_mbar: turnoContexto.scada.comp_pres_imp || null,
+                    scada_cald_flujo_m3h: turnoContexto.scada.cald_flujo || null,
+                    scada_ant_flujo_m3h: turnoContexto.scada.ant_flujo || null,
+                    atex_confirmado: true,
+                    estado_ronda: 'Completada',
+                    hora_fin: new Date()
+                }]).select();
+
+                if (!errorTurno && areasStatus.gasometro && datosGasometroTemp) {
+                    const idReal = turnoData[0].id;
+                    // 2. Guardar Gasometro enlazado al Turno Padre
                     await supabaseClient.from('inspeccion_gasometro').insert([{
-                        turno_id: turnoContexto.turnoIdBd,
+                        turno_id: idReal,
+                        estado_anclajes: datosGasometroTemp.anclajes,
                         altura_interna_m: datosGasometroTemp.altura || null, 
                         presion_inter_membrana_mbar: datosGasometroTemp.presion || null, 
                         lectura_lel_porcentaje: datosGasometroTemp.lel || null,
-                        nivel_guarda_hidraulica: datosGasometroTemp.guarda, 
-                        observaciones: datosGasometroTemp.observaciones
+                        nivel_guarda_hidraulica: datosGasometroTemp.guarda,
+                        estado_sopladores: datosGasometroTemp.sopladores_ok ? 'Operativo' : 'Falla',
+                        observaciones: datosGasometroTemp.observaciones,
+                        foto_anclaje: fotosGasometroTemp.anclaje,
+                        foto_instrumentos: fotosGasometroTemp.instrumentos,
+                        foto_guarda: fotosGasometroTemp.guarda,
+                        foto_sopladores: fotosGasometroTemp.sopladores
                     }]);
                 }
-                await supabaseClient.from('registro_turnos').update({ estado_ronda: 'Completada', hora_fin: new Date() }).eq('id', turnoContexto.turnoIdBd);
+                
                 setIsSavingDb(false);
                 setPantallaActiva('fin');
             };
@@ -456,13 +439,13 @@
                 <div className="bg-gray-100 min-h-screen selection:bg-amber-200">
                     {pantallaActiva === 'hub' && <HubCentral userEmail={user.email} prevTurnoData={valoresAnteriores.turno} avanzarAInstalaciones={manejarArranqueRonda} />}
                     {pantallaActiva === 'instalaciones' && <MenuInstalaciones areasDone={areasStatus} irAGasometro={() => setPantallaActiva('form_gasometro')} finalizarTurno={manejarFinalizacionTotal} loadingDb={isSavingDb} />}
-                    {pantallaActiva === 'form_gasometro' && <FormularioGasometro prevData={valoresAnteriores.gasometro} onTerminado={(datos) => { setDatosGasometroTemp(datos); setAreasStatus({...areasStatus, gasometro: true}); setPantallaActiva('instalaciones'); }} />}
+                    {pantallaActiva === 'form_gasometro' && <FormularioGasometro turnoId={turnoContexto.turnoIdBd} prevData={valoresAnteriores.gasometro} onTerminado={(datos, fotos) => { setDatosGasometroTemp(datos); setFotosGasometroTemp(fotos); setAreasStatus({...areasStatus, gasometro: true}); setPantallaActiva('instalaciones'); }} />}
                     {pantallaActiva === 'fin' && (
                         <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#1e1e1e]">
                             <div className="bg-[#2a2a2a] p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm border border-zinc-700">
                                 <div className="text-6xl mb-6">✅</div>
                                 <h2 className="text-2xl font-bold text-white tracking-wide">Ronda Finalizada</h2>
-                                <p className="text-zinc-400 text-sm mt-2 mb-8">Todos los datos del hub y terreno han sido guardados.</p>
+                                <p className="text-zinc-400 text-sm mt-2 mb-8">Todos los datos del hub, terreno y las 4 fotografias obligatorias han sido aseguradas en la base central.</p>
                                 <button onClick={() => window.location.reload()} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-xl shadow-lg transition-all uppercase tracking-wider">Nuevo Turno</button>
                             </div>
                         </div>
