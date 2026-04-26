@@ -20,10 +20,9 @@
     <script type="text/babel">
         // ==========================================
         // 1. CONFIGURACIÓN DE SUPABASE
-        // IMPORTANTE: Reemplaza estos valores con las credenciales de tu panel de Supabase
         // ==========================================
-        const SUPABASE_URL = 'TU_URL_DE_SUPABASE';
-        const SUPABASE_ANON_KEY = 'TU_ANON_KEY_DE_SUPABASE';
+        const SUPABASE_URL = 'https://cbvipsjpvlgyipifidyo.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_-9xy9fwszhg5RMqlilNn-A_wnK2VGCb';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const { useState } = React;
@@ -181,77 +180,4 @@
                         </label>
                     </section>
 
-                    <section className="bg-white rounded-xl shadow-sm p-4 grid grid-cols-2 gap-3">
-                        <h3 className="text-sm font-bold text-blue-800 uppercase border-b pb-1 col-span-2">B. Instrumentación</h3>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500">Altura Interna (m)</label>
-                            <input type="number" step="0.1" name="altura_interna_m" onChange={handleChange} className="mt-1 w-full border p-2 rounded text-center" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500">Presión Inter (mbar)</label>
-                            <input type="number" step="0.1" name="presion_inter_membrana_mbar" onChange={handleChange} className="mt-1 w-full border p-2 rounded text-center" />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-xs font-medium text-gray-500">Detector LEL (%)</label>
-                            <input type="number" step="0.1" name="lectura_lel_porcentaje" onChange={handleChange} className={`mt-1 w-full border p-2 rounded text-center font-bold ${formData.lectura_lel_porcentaje > 0 ? 'bg-red-100 text-red-700' : 'bg-gray-50'}`} placeholder="0.0" />
-                        </div>
-                    </section>
-
-                    <section className="bg-white rounded-xl shadow-sm p-4 space-y-2">
-                        <h3 className="text-sm font-bold text-blue-800 uppercase border-b pb-1">C. Observaciones</h3>
-                        <textarea name="observaciones" onChange={handleChange} className="w-full border p-2 rounded mt-1 bg-gray-50 text-sm" rows="3" placeholder="Detalles de la operación o anomalías..."></textarea>
-                    </section>
-
-                    <button onClick={finalizarRonda} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold py-4 rounded-xl shadow-lg text-lg">
-                        {loading ? 'Guardando Registro...' : 'FINALIZAR RONDA GASÓMETRO'}
-                    </button>
-                </div>
-            );
-        }
-
-        // ==========================================
-        // 4. COMPONENTE PRINCIPAL: APP (Controlador)
-        // ==========================================
-        function App() {
-            const [vistaActual, setVistaActual] = useState('inicio'); // Estados: 'inicio', 'gasometro', 'fin'
-            const [turnoActivoId, setTurnoActivoId] = useState(null);
-
-            const manejarTurnoIniciado = (id) => {
-                setTurnoActivoId(id);
-                setVistaActual('gasometro');
-            };
-
-            const manejarRondaFinalizada = () => {
-                setVistaActual('fin');
-            };
-
-            return (
-                <div className="bg-gray-200 min-h-screen font-sans">
-                    {vistaActual === 'inicio' && <InicioTurno onTurnoIniciado={manejarTurnoIniciado} />}
-                    
-                    {vistaActual === 'gasometro' && <RondaGasometro turnoId={turnoActivoId} onRondaFinalizada={manejarRondaFinalizada} />}
-                    
-                    {vistaActual === 'fin' && (
-                        <div className="flex flex-col items-center justify-center min-h-screen p-10 text-center">
-                            <div className="bg-white p-8 rounded-xl shadow-md max-w-sm w-full">
-                                <svg className="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <h2 className="text-2xl font-bold text-gray-800">¡Ronda Sincronizada!</h2>
-                                <p className="mt-2 text-sm text-gray-600">Los datos se han guardado exitosamente en la base de datos.</p>
-                                <button onClick={() => setVistaActual('inicio')} className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-3 rounded-lg transition-colors">
-                                    Iniciar Nuevo Turno
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        // ==========================================
-        // 5. RENDERIZADO AL DOM
-        // ==========================================
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+                    <section className="bg-white rounded-xl shadow-sm p-4 grid grid-cols
