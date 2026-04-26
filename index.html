@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RondaSync - Inspeccion Biogas</title>
+    <title>RondaSync - Inspeccion PTAR Talagante</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -56,7 +56,7 @@
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-white tracking-wide">RondaSync</h1>
-                                <p className="text-xs text-zinc-400 uppercase tracking-widest">Gestion de Mantenimiento</p>
+                                <p className="text-xs text-zinc-400 uppercase tracking-widest">PTAR Talagante</p>
                             </div>
                         </div>
 
@@ -124,13 +124,6 @@
                         <button onClick={() => supabaseClient.auth.signOut()} className="text-xs font-bold bg-red-500 px-3 py-1 rounded hover:bg-red-600">SALIR</button>
                     </div>
 
-                    {/* Novedades Turno Anterior */}
-                    <div className="bg-white rounded-xl shadow-sm border-l-4 border-yellow-500 p-4">
-                        <h3 className="text-xs font-bold text-gray-800 uppercase mb-2">Novedades Turno Anterior</h3>
-                        <p className="text-sm text-gray-600">- Soplador 2 con vibracion leve.<br/>- Trampa condensado linea principal requiere drenaje manual.</p>
-                    </div>
-
-                    {/* SCADA */}
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
                         <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 flex items-center">
                             <span className="bg-blue-100 text-blue-800 p-1 rounded mr-2">🖥️</span> Modulo SCADA vs Realidad
@@ -145,29 +138,12 @@
                                 <input type="number" step="0.1" className="mt-1 w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" onChange={e => setScada({...scada, presion: e.target.value})} />
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500">Flujo Biogas (Nm3/h)</label>
-                            <input type="number" step="0.1" className="mt-1 w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" onChange={e => setScada({...scada, flujo: e.target.value})} />
-                        </div>
                     </div>
 
-                    {/* ATEX */}
                     <div className="bg-white rounded-xl shadow-sm p-4 border-2 border-red-100">
                         <h3 className="text-sm font-bold text-red-700 uppercase mb-3 flex items-center">
                             <span className="mr-2">🛑</span> Protocolo de Seguridad (ATEX)
                         </h3>
-                        
-                        <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center mb-4 border border-gray-300 relative overflow-hidden">
-                           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/blueprint.png')]"></div>
-                           <span className="font-bold text-gray-600 z-10 bg-white/80 px-4 py-2 rounded shadow">Tocar para ampliar Plano ATEX</span>
-                        </div>
-
-                        <ul className="text-xs text-gray-600 space-y-1 mb-4 list-disc pl-4">
-                            <li>Uso obligatorio de detector %LEL personal.</li>
-                            <li>Prohibido telefonos sin certificacion intrinseca.</li>
-                            <li>Verificar direccion del viento en valvulas de alivio.</li>
-                        </ul>
-
                         <label className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
                             <input type="checkbox" onChange={e => setAtex(e.target.checked)} className="h-6 w-6 text-red-600 mt-1" />
                             <span className="text-sm text-red-900 font-medium">He revisado los riesgos y el plano ATEX.</span>
@@ -182,7 +158,7 @@
         }
 
         // ==========================================
-        // COMPONENTE: RONDA TERRENO (FULL)
+        // COMPONENTE: RONDA TERRENO CON VALIDACIONES (TALAGANTE)
         // ==========================================
         function RondaGasometro({ turnoId, onFin }) {
             const [loading, setLoading] = useState(false);
@@ -217,7 +193,22 @@
                 else onFin();
             };
 
-            const LEL_Alert = parseFloat(fd.lel) > 0;
+            // Lógica de Validación Activa
+            const p = parseFloat(fd.presion);
+            const h = parseFloat(fd.altura);
+            const lel = parseFloat(fd.lel);
+
+            const isPresionCritica = p >= 25;
+            const isAlturaCritica = h > 10.1;
+            const isCritical = isPresionCritica || isAlturaCritica;
+
+            const isPresionWarning = p > 0 && (p < 16 || p > 18) && !isPresionCritica;
+            const isAlturaWarning = h > 0 && (h < 5.05 || h > 7.07) && !isAlturaCritica;
+
+            const requiresObservation = lel > 0 || fd.anclajes === 'Observacion' || fd.guarda !== 'Nivel Normal';
+            const observationMissing = requiresObservation && fd.observaciones.trim() === '';
+
+            const canSubmit = !isCritical && !observationMissing && !loading;
 
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-20 font-sans">
@@ -226,7 +217,6 @@
                         <h2 className="text-xl font-bold tracking-wide">Inspeccion Gasometro</h2>
                     </div>
 
-                    {/* A. ENTORNO */}
                     <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
                         <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">A. Entorno y Seguridad Pasiva</h3>
                         <div className="space-y-3">
@@ -234,14 +224,9 @@
                                 <input type="checkbox" name="senalizaciones" onChange={handleChange} className="h-6 w-6 text-blue-600 rounded" />
                                 <span className="text-sm font-medium text-gray-700">Senalizaciones y letreros OK</span>
                             </label>
-                            <label className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <input type="checkbox" name="alarmas" defaultChecked onChange={handleChange} className="h-6 w-6 text-blue-600 rounded" />
-                                <span className="text-sm font-medium text-gray-700">Alarmas visibles/sonoras apagadas</span>
-                            </label>
                         </div>
                     </section>
 
-                    {/* B. ESTRUCTURA */}
                     <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
                         <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">B. Integridad Estructural</h3>
                         <div className="space-y-4">
@@ -252,34 +237,36 @@
                                     <option value="Observacion">Con observacion</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Membrana Interna (Por escotilla)</label>
-                                <input type="text" name="membranaInterna" onChange={handleChange} placeholder="Ej: Sin pliegues, sin condensado..." className="w-full border p-3 rounded-lg bg-gray-50" />
-                            </div>
                         </div>
                     </section>
 
-                    {/* C. INSTRUMENTACION */}
                     <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
                         <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">C. Instrumentacion de Campo</h3>
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Altura Interna (m)</label>
-                                <input type="number" step="0.1" name="altura" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" />
+                        
+                        {isCritical && (
+                            <div className="bg-red-600 text-white p-3 rounded-lg mb-4 text-sm font-bold shadow-md">
+                                🛑 ALERTA CRITICA: Limite mecanico excedido. Contactar supervision inmediatamente.
                             </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Presion Inter (mbar)</label>
-                                <input type="number" step="0.1" name="presion" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" />
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div className={`p-2 rounded-lg border-2 ${isAlturaCritica ? 'border-red-600 bg-red-50' : (isAlturaWarning ? 'border-yellow-400 bg-yellow-50' : 'border-transparent')}`}>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Altura Interna (m)</label>
+                                <input type="number" step="0.1" name="altura" onChange={handleChange} className="w-full border p-3 rounded-lg text-center font-bold text-lg" placeholder="0.0" />
+                                {isAlturaWarning && <span className="text-[10px] text-yellow-700 font-bold">Rango fuera de 50-70%</span>}
+                            </div>
+                            <div className={`p-2 rounded-lg border-2 ${isPresionCritica ? 'border-red-600 bg-red-50' : (isPresionWarning ? 'border-yellow-400 bg-yellow-50' : 'border-transparent')}`}>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Presion (mbar)</label>
+                                <input type="number" step="0.1" name="presion" onChange={handleChange} className="w-full border p-3 rounded-lg text-center font-bold text-lg" placeholder="0.0" />
+                                {isPresionWarning && <span className="text-[10px] text-yellow-700 font-bold">Fuera de 16-18 mbar</span>}
                             </div>
                         </div>
-                        <div className={`p-4 rounded-lg border-2 ${LEL_Alert ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-200'}`}>
-                            <label className={`block text-xs font-bold uppercase mb-1 ${LEL_Alert ? 'text-red-700' : 'text-gray-500'}`}>Detector % LEL</label>
-                            <input type="number" step="0.1" name="lel" onChange={handleChange} className={`w-full border p-3 rounded-lg text-center font-bold text-2xl ${LEL_Alert ? 'bg-red-100 text-red-700 border-red-400' : 'bg-white'}`} placeholder="0.0" />
-                            {LEL_Alert && <p className="text-xs text-red-600 font-bold mt-2">⚠️ ALERTA: Peligro de atmosfera explosiva detectado.</p>}
+                        <div className={`p-4 rounded-lg border-2 ${lel > 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-200'}`}>
+                            <label className={`block text-xs font-bold uppercase mb-1 ${lel > 0 ? 'text-red-700' : 'text-gray-500'}`}>Detector % LEL</label>
+                            <input type="number" step="0.1" name="lel" onChange={handleChange} className={`w-full border p-3 rounded-lg text-center font-bold text-2xl ${lel > 0 ? 'bg-red-100 text-red-700 border-red-400' : 'bg-white'}`} placeholder="0.0" />
                         </div>
                     </section>
 
-                    {/* D. EQUIPOS */}
                     <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
                         <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">D. Equipos y Valvuleria</h3>
                         <div className="space-y-4">
@@ -291,53 +278,21 @@
                                     <option value="Rebalse">Rebalse / Apertura</option>
                                 </select>
                             </div>
-                            
-                            <div className="space-y-2 border-t pt-3">
-                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                                    <input type="checkbox" name="valvulaIn" onChange={handleChange} className="h-5 w-5 text-blue-600" />
-                                    <span className="text-sm text-gray-700">Valvula ingreso biogas OK</span>
-                                </label>
-                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                                    <input type="checkbox" name="trampas" onChange={handleChange} className="h-5 w-5 text-blue-600" />
-                                    <span className="text-sm text-gray-700">Trampas condensado drenadas</span>
-                                </label>
-                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                                    <input type="checkbox" name="damper" onChange={handleChange} className="h-5 w-5 text-blue-600" />
-                                    <span className="text-sm text-gray-700">Valvula damper / salida OK</span>
-                                </label>
-                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                                    <input type="checkbox" name="tablero" onChange={handleChange} className="h-5 w-5 text-blue-600" />
-                                    <span className="text-sm text-gray-700">Tablero electrico OK</span>
-                                </label>
-                            </div>
-
-                            <div className="border-t pt-3">
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Estado Sopladores Aire</label>
-                                <input type="text" name="sopladores" defaultValue="Operativo" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50" />
-                            </div>
                         </div>
                     </section>
 
-                    {/* FOTOS Y NOTAS */}
-                    <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+                    <section className={`bg-white rounded-xl shadow-sm p-4 border-2 ${observationMissing ? 'border-red-500' : 'border-gray-200'}`}>
                         <h3 className="text-xs font-bold text-gray-800 uppercase border-b pb-2 mb-3">Registro Final</h3>
-                        
-                        <div className="mb-4">
-                            <label className="block text-xs font-medium text-gray-500 mb-2">Captura Fotografica</label>
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
-                                <span className="text-2xl mb-2 block">📷</span>
-                                <span className="text-sm text-blue-600 font-bold">Tomar Foto (Terreno)</span>
-                                <input type="file" accept="image/*" capture="environment" className="hidden" />
-                            </div>
-                        </div>
-
+                        {observationMissing && (
+                            <p className="text-xs text-red-600 font-bold mb-2">⚠️ Debido a anomalias registradas (LEL o Estado de equipos), debes ingresar una observacion obligatoria.</p>
+                        )}
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Observaciones Generales</label>
-                            <textarea name="observaciones" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-sm" rows="3" placeholder="Clima, olores, anomalias..."></textarea>
+                            <textarea name="observaciones" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-sm" rows="3" placeholder="Clima, olores, justificacion de alertas..."></textarea>
                         </div>
                     </section>
 
-                    <button onClick={guardar} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-xl shadow-xl text-lg uppercase tracking-wide">
+                    <button onClick={guardar} disabled={!canSubmit} className={`w-full text-white font-bold py-5 rounded-xl shadow-xl text-lg uppercase tracking-wide transition-colors ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400 cursor-not-allowed'}`}>
                         {loading ? 'Guardando Registro...' : 'Finalizar Modulo Gasometro'}
                     </button>
                 </div>
