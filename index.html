@@ -21,45 +21,100 @@
         const { useState, useEffect } = React;
 
         // ==========================================
-        // COMPONENTES AUXILIARES
+        // COMPONENTE: FOTO UPLOADER V2 (CON PREVISUALIZACIÓN Y CORRECCIÓN)
         // ==========================================
         function FotoUploader({ idCampo, turnoId, onFotoSubida, titulo }) {
             const [subiendo, setSubiendo] = useState(false);
-            const [url, setUrl] = useState(null);
+            const [previsualizacionLocal, setPrevisualizacionLocal] = useState(null); // URL blob temporal
+            const [archivoParaSubir, setArchivoParaSubir] = useState(null); // Objeto File real
+            const [urlFinal, setUrlFinal] = useState(null); // URL pública en Supabase
 
-            const manejarSubida = async (e) => {
+            // Paso 1: Captura la foto y la muestra localmente
+            const manejarCapturaLocal = (e) => {
                 const archivo = e.target.files[0];
                 if (!archivo) return;
+
+                setArchivoParaSubir(archivo);
+                // Crea una URL temporal para mostrar la imagen en pantalla inmediatamente
+                setPrevisualizacionLocal(URL.createObjectURL(archivo)); 
+                setUrlFinal(null); // Resetea estado final por si acaso
+            };
+
+            // Paso 2: El operador confirma que la foto está bien y la sube
+            const confirmarYSubir = async () => {
+                if (!archivoParaSubir) return;
                 setSubiendo(true);
-                const ext = archivo.name.split('.').pop();
+
+                const ext = archivoParaSubir.name.split('.').pop();
                 const nombreArchivo = `${turnoId}-${idCampo}-${Date.now()}.${ext}`;
 
-                const { error } = await supabaseClient.storage.from('inspeccion_fotos').upload(nombreArchivo, archivo);
+                const { error } = await supabaseClient.storage.from('inspeccion_fotos').upload(nombreArchivo, archivoParaSubir);
+                
                 if (error) {
-                    alert("Error subiendo foto: " + error.message);
+                    alert("Error crítico subiendo al servidor: " + error.message);
+                    setPrevisualizacionLocal(null); // Resetea para obligar a reintentar
                 } else {
                     const { data } = supabaseClient.storage.from('inspeccion_fotos').getPublicUrl(nombreArchivo);
-                    setUrl(data.publicUrl);
-                    onFotoSubida(idCampo, data.publicUrl);
+                    setUrlFinal(data.publicUrl);
+                    onFotoSubida(idCampo, data.publicUrl); // Informa al formulario padre
                 }
                 setSubiendo(false);
             };
 
+            // Paso Extra: El operador decide borrar la foto y tomar otra
+            const reintentarCaptura = () => {
+                setPrevisualizacionLocal(null);
+                setArchivoParaSubir(null);
+                setUrlFinal(null);
+                // El input file se limpia automáticamente al desmontarse/montarse el label
+            };
+
+            // INTERFAZ VISUAL DEL UPLOADER
             return (
-                <div className={`mt-2 p-3 border-2 border-dashed rounded-lg text-center transition ${url ? 'border-emerald-400 bg-emerald-50' : 'border-blue-300 bg-blue-50'}`}>
-                    {subiendo ? (
-                        <span className="text-sm font-bold text-blue-600 animate-pulse">Subiendo...</span>
-                    ) : url ? (
-                        <div className="flex items-center justify-center space-x-2">
-                            <span className="text-xl">✅</span>
-                            <span className="text-xs text-emerald-700 font-bold">Foto Capturada</span>
-                        </div>
-                    ) : (
-                        <label className="cursor-pointer flex flex-col items-center justify-center">
-                            <span className="text-2xl mb-1">📷</span>
+                <div className={`mt-2 p-3 border-2 rounded-lg transition-all ${urlFinal ? 'border-emerald-500 bg-emerald-50' : previsualizacionLocal ? 'border-blue-400 bg-blue-50' : 'border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100'}`}>
+                    
+                    {/* ESTADO 1: No hay foto tomada -> Muestra botón de cámara */}
+                    {!previsualizacionLocal && !subiendo && !urlFinal && (
+                        <label className="cursor-pointer flex flex-col items-center justify-center py-2">
+                            <span className="text-3xl mb-1">📷</span>
                             <span className="text-xs text-blue-700 font-bold uppercase">{titulo}</span>
-                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={manejarSubida} />
+                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={manejarCapturaLocal} />
                         </label>
+                    )}
+
+                    {/* ESTADO 2: Foto tomada localmente -> Muestra PREVISUALIZACIÓN y botones de decisión */}
+                    {previsualizacionLocal && !urlFinal && (
+                        <div className="text-center space-y-3">
+                            <p className="text-[10px] text-blue-800 font-bold uppercase">Verifique calidad de evidencia:</p>
+                            <img src={previsualizacionLocal} alt="Previsualizacion" className="mx-auto h-40 rounded-lg shadow-md border-2 border-white object-cover" />
+                            
+                            {subiendo ? (
+                                <div className="text-sm font-bold text-blue-600 animate-pulse py-2">Subiendo a la nube...</div>
+                            ) : (
+                                <div className="flex justify-center space-x-3 pt-1">
+                                    <button onClick={confirmarYSubir} className="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow hover:bg-emerald-700 flex items-center">
+                                        <span className="mr-1.5">📤</span> SUBIR FOTO
+                                    </button>
+                                    <button onClick={reintentarCaptura} className="bg-red-100 text-red-700 text-xs font-bold px-4 py-2 rounded-lg hover:bg-red-200 flex items-center">
+                                        <span className="mr-1.5">🔄</span> REINTENTAR
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ESTADO 3: Foto subida con éxito -> Muestra check verde y miniatura */}
+                    {urlFinal && (
+                        <div className="flex items-center space-x-3 p-1">
+                            <img src={urlFinal} alt="Final" className="h-10 w-10 rounded object-cover border border-emerald-200" />
+                            <div className="flex-1">
+                                <div className="flex items-center text-emerald-700">
+                                    <span className="text-xl mr-2">✅</span>
+                                    <span className="text-sm font-bold">Evidencia Asegurada</span>
+                                </div>
+                                <p className="text-[9px] text-emerald-600 tracking-tight">Trazabilidad completa en servidor.</p>
+                            </div>
+                        </div>
                     )}
                 </div>
             );
@@ -111,7 +166,7 @@
                     <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Resumen Turno Anterior</h2></div>
                     <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 shadow-sm">
                         <h3 className="text-sm font-bold text-yellow-800 uppercase mb-3">Novedades Reportadas</h3>
-                        <ul className="text-sm text-yellow-900 space-y-2 list-disc pl-4"><li>Operación normal, sin novedades en equipos mecánicos.</li></ul>
+                        <ul className="text-sm text-yellow-900 space-y-2 list-disc pl-4"><li>Operación normal, sin novedades críticas.</li></ul>
                     </div>
                     <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg mt-8">HE LEIDO Y COMPRENDIDO</button>
                 </div>
@@ -240,9 +295,9 @@
         }
 
         // ==========================================
-        // FORMULARIO GASÓMETRO (CON MENÚ DE FALLAS DESPLEGABLE)
+        // FORMULARIO GASÓMETRO (CON FALLAS DINÁMICAS Y FOTOS CON PREVIEW V2)
         // ==========================================
-        function FormularioGasometro({ turnoId, prevData, onTerminado }) {
+        function FormularioGasometro({ turnoId, prevData, listaFallas, onTerminado }) {
             const [fd, setFd] = useState({ anclajes:'Optimo', altura:'', presion:'', lel:'', guarda:'Nivel Normal', sopladores_ok: true, observaciones:'' });
             const [fotos, setFotos] = useState({ anclaje: null, altura: null, presion: null, lel: null, guarda: null, sopladores: null });
 
@@ -251,14 +306,21 @@
             const p = parseFloat(fd.presion); const h = parseFloat(fd.altura); const lel = parseFloat(fd.lel);
             const isCritical = p >= 25 || h > 10.1;
             
-            // Si el estado no es Optimo, requiere observacion
+            // Si el estado no es Optimo o hay alarmas, requiere observacion
             const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || !fd.sopladores_ok;
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
             
+            // Regla estricta: Las 6 fotos deben estar SUBIDAS (tener URL final)
             const fotosCompletas = fotos.anclaje && fotos.altura && fotos.presion && fotos.lel && fotos.guarda && fotos.sopladores;
             const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
             
             const canSubmit = fotosCompletas && datosCompletos && !isCritical && !observationMissing;
+
+            // Agrupar las fallas por 'grupo' para mostrarlas ordenadas en el select
+            const fallasAgrupadas = listaFallas.reduce((acc, falla) => {
+                (acc[falla.grupo] = acc[falla.grupo] || []).push(falla);
+                return acc;
+            }, {});
 
             return (
                 <div className="p-4 max-w-md mx-auto space-y-5 min-h-screen pb-10 bg-gray-50 font-sans">
@@ -266,101 +328,95 @@
                         <span className="text-2xl mr-3">🏗️</span><h2 className="text-lg font-bold">Puntos de Control: Gasometro</h2>
                     </div>
                     
-                    {/* PC 1: Anclajes (CON DESPLEGABLE DE FALLAS) */}
+                    {/* PC 1: Anclajes (CON DESPLEGABLE DINÁMICO) */}
                     <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
                         <div className="flex justify-between items-center border-b pb-2 mb-3">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-1: Sistema de Anclaje</h3>
+                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-1: Sistema de Anclaje Base</h3>
                         </div>
-                        <p className="text-xs text-gray-500 mb-2">Verifique pernos, flanges y membranas en la base.</p>
+                        <p className="text-xs text-gray-500 mb-2">Verifique pernos, flanges y membranas en contacto con la base de hormigon.</p>
                         
                         <select onChange={e=>setFd({...fd, anclajes:e.target.value})} className={`w-full border p-3 rounded font-bold text-sm ${fd.anclajes !== 'Optimo' ? 'bg-yellow-50 text-yellow-800 border-yellow-300' : 'bg-gray-50'}`}>
-                            <option value="Optimo">Estado Optimo (Sin anomalias)</option>
+                            <option value="Optimo">✓ Estado Optimo (Sin anomalias detectadas)</option>
                             
-                            <optgroup label="Fugas Detectadas">
-                                <option value="Fuga de biogas por perno">Fuga de biogas por perno de anclaje</option>
-                                <option value="Fuga de biogas por brida">Fuga de biogas por linea de brida/flange</option>
-                                <option value="Fuga de aire entre membranas">Fuga de aire entre membranas (base exterior)</option>
-                            </optgroup>
-                            
-                            <optgroup label="Problemas Mecanicos/Estructurales">
-                                <option value="Rodon montado/mordido">Rodon de membrana montado o mordido</option>
-                                <option value="Doblez anormal membrana">Doblez o pliegue anormal en membrana</option>
-                                <option value="Pernos sueltos/cortados">Pernos de anclaje sueltos, cortados o faltantes</option>
-                                <option value="Corrosion severa">Corrosion severa en pernos o flanges</option>
-                                <option value="Acumulacion de agua/suciedad">Acumulacion de agua/suciedad en perfil base</option>
-                            </optgroup>
-                            
-                            <optgroup label="Otros">
-                                <option value="Otra anomalia">Otra anomalia (Detallar al final)</option>
-                            </optgroup>
+                            {Object.keys(fallasAgrupadas).map(grupo => (
+                                <optgroup key={grupo} label={`⚠️ Falla Tipo: ${grupo}`}>
+                                    {fallasAgrupadas[grupo].map(falla => (
+                                        <option key={falla.id} value={falla.descripcion}>
+                                            {falla.descripcion}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            ))}
                         </select>
 
-                        <FotoUploader idCampo="anclaje" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto de Base/Anclajes" />
+                        {/* Foto con Previsualización y Corrección */}
+                        <FotoUploader idCampo="anclaje" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto de Base y Pernos de Anclaje" />
                     </div>
 
-                    {/* PC 2: Instrumentos Separados */}
+                    {/* PC 2: Instrumentos Separados con Previsualización */}
                     <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
                         <div className="flex justify-between items-center border-b pb-2 mb-4">
                             <h3 className="text-sm font-bold text-gray-800 uppercase">PC-2: Lecturas de Campo</h3>
                         </div>
                         
                         {/* 2A: Altura */}
-                        <div className="mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div className="mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-inner">
                             <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-700 font-bold uppercase">Altura Interna (m)</label><Fantasma valor={prevData?.altura_interna_m} /></div>
-                            <input type="number" onChange={e=>setFd({...fd, altura:e.target.value})} className="w-full border p-3 rounded text-center font-bold text-xl mb-2"/>
-                            <FotoUploader idCampo="altura" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Cinta Metrica" />
+                            <input type="number" step="0.01" placeholder="0.00" onChange={e=>setFd({...fd, altura:e.target.value})} className="w-full border p-3 rounded text-center font-bold text-xl mb-1 bg-white"/>
+                            <FotoUploader idCampo="altura" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Cinta Metrica (Nivel)" />
                         </div>
 
                         {/* 2B: Presión */}
-                        <div className="mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                            <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-700 font-bold uppercase">Presion (mbar)</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div>
-                            <input type="number" onChange={e=>setFd({...fd, presion:e.target.value})} className="w-full border p-3 rounded text-center font-bold text-xl mb-2"/>
+                        <div className="mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-inner">
+                            <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-700 font-bold uppercase">Presion mbar (Diferencial)</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div>
+                            <input type="number" step="0.1" placeholder="0.0" onChange={e=>setFd({...fd, presion:e.target.value})} className="w-full border p-3 rounded text-center font-bold text-xl mb-1 bg-white"/>
                             <FotoUploader idCampo="presion" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Manometro en U" />
                         </div>
 
                         {/* 2C: LEL */}
-                        <div className={`p-3 rounded-lg border ${lel > 0 ? 'bg-red-50 border-red-400' : 'bg-gray-50 border-gray-200'}`}>
-                            <div className="flex justify-between items-center mb-1"><label className="text-xs font-bold uppercase text-gray-700">Detector LEL Maximo (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
-                            <input type="number" onChange={e=>setFd({...fd, lel:e.target.value})} className={`w-full border p-3 rounded text-center font-bold text-xl mb-2 ${lel > 0 ? 'bg-red-100 text-red-700' : 'bg-white'}`}/>
+                        <div className={`p-3 rounded-lg border-2 ${lel > 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-200'}`}>
+                            <div className="flex justify-between items-center mb-1"><label className="text-xs font-bold uppercase text-gray-700">Lectura LEL Maxima (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
+                            <input type="number" step="0.1" placeholder="0.0" onChange={e=>setFd({...fd, lel:e.target.value})} className={`w-full border p-3 rounded text-center font-bold text-xl mb-1 ${lel > 0 ? 'bg-red-100 text-red-700' : 'bg-white'}`}/>
                             <FotoUploader idCampo="lel" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Pantalla Detector LEL" />
                         </div>
                     </div>
 
-                    {/* PC 3: Guarda Hidráulica */}
+                    {/* PC 3: Guarda Hidráulica con Previsualización */}
                     <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
                         <div className="flex justify-between items-center border-b pb-2 mb-3">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-3: Sello de Agua</h3>
+                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-3: Sello de Agua (Guarda)</h3>
                         </div>
-                        <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-500 font-bold">Nivel de Liquido en Visor</label><Fantasma valor={prevData?.nivel_guarda_hidraulica} /></div>
-                        <select onChange={e=>setFd({...fd, guarda:e.target.value})} className={`w-full border p-3 rounded font-bold ${fd.guarda !== 'Nivel Normal' ? 'bg-red-100 text-red-800' : 'bg-gray-50'}`}>
+                        <div className="flex justify-between items-center mb-1"><label className="text-xs text-gray-500 font-bold">Nivel de Liquido en Visor de Vidrio</label><Fantasma valor={prevData?.nivel_guarda_hidraulica} /></div>
+                        <select onChange={e=>setFd({...fd, guarda:e.target.value})} className={`w-full border p-3 rounded font-bold text-sm ${fd.guarda !== 'Nivel Normal' ? 'bg-red-100 text-red-800' : 'bg-gray-50'}`}>
                             <option>Nivel Normal</option><option>Bajo (Perdida de sello)</option><option>Rebalse</option>
                         </select>
-                        <FotoUploader idCampo="guarda" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Visor de Nivel" />
+                        <FotoUploader idCampo="guarda" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Visor de Guarda Hidraulica" />
                     </div>
 
-                    {/* PC 4: Sistema de Aire */}
+                    {/* PC 4: Sistema de Aire con Previsualización */}
                     <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
                         <div className="flex justify-between items-center border-b pb-2 mb-3">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-4: Sopladores y Damper</h3>
+                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-4: Inyeccion de Aire Intermembrana</h3>
                         </div>
-                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded border mb-2 cursor-pointer">
-                            <input type="checkbox" defaultChecked onChange={e=>setFd({...fd, sopladores_ok: e.target.checked})} className="h-6 w-6 text-blue-600" />
-                            <span className="text-sm font-bold text-gray-700">Equipos Operativos</span>
+                        <p className="text-xs text-gray-500 mb-3">Inspeccione operatividad de los sopladores y posicion de válvula damper.</p>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded border mb-2 cursor-pointer shadow-inner">
+                            <input type="checkbox" defaultChecked onChange={e=>setFd({...fd, sopladores_ok: e.target.checked})} className="h-6 w-6 text-blue-600 rounded" />
+                            <span className="text-sm font-bold text-gray-700">Equipos Operativos (Sin ruidos anormales)</span>
                         </label>
-                        <FotoUploader idCampo="sopladores" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Sopladores/Damper" />
+                        <FotoUploader idCampo="sopladores" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Sopladores y Valvula Damper" />
                     </div>
 
                     {/* CIERRE */}
                     <div className="bg-white p-4 rounded-xl border shadow-sm">
-                         <label className="text-xs text-gray-500 font-bold">Observaciones Generales</label>
-                         {observationMissing && <p className="text-xs text-red-600 font-bold my-1">⚠️ Observacion OBLIGATORIA por anomalias detectadas.</p>}
-                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border p-2 rounded mt-1 text-sm ${observationMissing ? 'bg-red-50 border-red-300' : 'bg-gray-50'}`} rows="3" placeholder="Detalle la anomalia reportada..."></textarea>
+                         <label className="text-xs text-gray-500 font-bold">Observaciones Generales de la Inspeccion</label>
+                         {observationMissing && <p className="text-xs text-red-600 font-bold my-1 p-1 bg-red-50 rounded">⚠️ Se requiere observacion obligatoria detallando la anomalia reportada arriba.</p>}
+                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border p-2 rounded mt-1 text-sm ${observationMissing ? 'bg-red-50 border-red-300' : 'bg-gray-50'}`} rows="3" placeholder="Justifique alertas LEL, estado no optimo o anomalias mecanicas..."></textarea>
                     </div>
 
-                    {!fotosCompletas && <p className="text-center text-xs text-red-600 font-bold px-4">Debe capturar las 6 fotografias obligatorias para habilitar el guardado.</p>}
+                    {!fotosCompletas && <p className="text-center text-xs text-red-600 font-bold px-4 pt-2">Debe CAPTURAR y SUBIR las 6 fotografias obligatorias para habilitar el guardado final.</p>}
                     
-                    <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-5 rounded-xl shadow-xl mt-4 uppercase tracking-widest transition-colors ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400 cursor-not-allowed'}`}>
-                        GUARDAR GASOMETRO
+                    <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-5 rounded-xl shadow-xl mt-4 uppercase tracking-widest transition-all ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.01]' : 'bg-gray-400 cursor-not-allowed'}`}>
+                        FINALIZAR REGISTRO GASOMETRO
                     </button>
                 </div>
             );
@@ -381,16 +437,25 @@
             
             const [isSavingDb, setIsSavingDb] = useState(false);
             const [valoresAnteriores, setValoresAnteriores] = useState({ turno: null, gasometro: null });
+            
+            // Catálogo dinámico de fallas
+            const [listaFallas, setListaFallas] = useState([]);
 
             useEffect(() => {
                 supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     setUser(session?.user ?? null);
-                    if(session?.user) cargarMemoriaOperativa();
+                    if(session?.user) {
+                        cargarMemoriaOperativa();
+                        cargarCatalogoFallas();
+                    }
                     setAuthChecking(false);
                 });
                 const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
                     setUser(session?.user ?? null);
-                    if(session?.user) cargarMemoriaOperativa();
+                    if(session?.user) {
+                        cargarMemoriaOperativa();
+                        cargarCatalogoFallas();
+                    }
                 });
                 return () => subscription.unsubscribe();
             }, []);
@@ -404,12 +469,18 @@
                 });
             };
 
+            const cargarCatalogoFallas = async () => {
+                const { data, error } = await supabaseClient.from('catalogo_fallas_gasometro').select('*').order('grupo', {ascending: true});
+                if(!error) setListaFallas(data);
+            };
+
             if (authChecking) return <div className="min-h-screen bg-[#1e1e1e]"></div>;
             if (!user) return <PantallaLogin />;
 
             const manejarArranqueRonda = async (shiftDetectado, scadaData) => {
                 setIsSavingDb(true);
-                const tempId = 'Turno-' + Date.now(); 
+                // Usamos ID temporal para enlazar fotos internamente
+                const tempId = 'TempId-' + Date.now(); 
                 setTurnoContexto({ shift: shiftDetectado, scada: scadaData, turnoIdBd: tempId });
                 setIsSavingDb(false);
                 setPantallaActiva('instalaciones');
@@ -418,6 +489,7 @@
             const manejarFinalizacionTotal = async () => {
                 setIsSavingDb(true);
                 
+                // 1. Crear Turno Padre Real
                 const { data: turnoData, error: errorTurno } = await supabaseClient.from('registro_turnos').insert([{
                     operador_nombre: user.email,
                     tipo_turno: turnoContexto.shift,
@@ -437,6 +509,7 @@
 
                 if (!errorTurno && areasStatus.gasometro && datosGasometroTemp) {
                     const idReal = turnoData[0].id;
+                    // 2. Guardar Inspeccion Gasometro real con IDs finales de fotos
                     await supabaseClient.from('inspeccion_gasometro').insert([{
                         turno_id: idReal,
                         estado_anclajes: datosGasometroTemp.anclajes,
@@ -463,13 +536,13 @@
                 <div className="bg-gray-100 min-h-screen selection:bg-amber-200">
                     {pantallaActiva === 'hub' && <HubCentral userEmail={user.email} prevTurnoData={valoresAnteriores.turno} avanzarAInstalaciones={manejarArranqueRonda} />}
                     {pantallaActiva === 'instalaciones' && <MenuInstalaciones areasDone={areasStatus} irAGasometro={() => setPantallaActiva('form_gasometro')} finalizarTurno={manejarFinalizacionTotal} loadingDb={isSavingDb} />}
-                    {pantallaActiva === 'form_gasometro' && <FormularioGasometro turnoId={turnoContexto.turnoIdBd} prevData={valoresAnteriores.gasometro} onTerminado={(datos, fotos) => { setDatosGasometroTemp(datos); setFotosGasometroTemp(fotos); setAreasStatus({...areasStatus, gasometro: true}); setPantallaActiva('instalaciones'); }} />}
+                    {pantallaActiva === 'form_gasometro' && <FormularioGasometro turnoId={turnoContexto.turnoIdBd} prevData={valoresAnteriores.gasometro} listaFallas={listaFallas} onTerminado={(datos, fotos) => { setDatosGasometroTemp(datos); setFotosGasometroTemp(fotos); setAreasStatus({...areasStatus, gasometro: true}); setPantallaActiva('instalaciones'); }} />}
                     {pantallaActiva === 'fin' && (
                         <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#1e1e1e]">
                             <div className="bg-[#2a2a2a] p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm border border-zinc-700">
                                 <div className="text-6xl mb-6">✅</div>
                                 <h2 className="text-2xl font-bold text-white tracking-wide">Ronda Finalizada</h2>
-                                <p className="text-zinc-400 text-sm mt-2 mb-8">Todos los datos del hub, terreno y las 6 fotografias obligatorias han sido aseguradas en la base central.</p>
+                                <p className="text-zinc-400 text-sm mt-2 mb-8">Todos los datos del hub, terreno y las 6 fotografias de respaldo han sido aseguradas en la base central.</p>
                                 <button onClick={() => window.location.reload()} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-xl shadow-lg transition-all uppercase tracking-wider">Nuevo Turno</button>
                             </div>
                         </div>
