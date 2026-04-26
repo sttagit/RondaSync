@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RondaSync - Seguridad Biogas</title>
+    <title>RondaSync - Inspeccion Biogas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body className="bg-gray-200">
     <div id="root"></div>
 
     <script type="text/babel">
@@ -21,7 +21,7 @@
         const { useState, useEffect } = React;
 
         // ==========================================
-        // COMPONENTE: LOGIN REAL
+        // COMPONENTE: LOGIN DARK MODE
         // ==========================================
         function PantallaLogin() {
             const [email, setEmail] = useState('');
@@ -38,25 +38,47 @@
             };
 
             return (
-                <div className="min-h-screen bg-zinc-900 flex items-center justify-center p-4">
+                <div className="min-h-screen bg-[#1e1e1e] flex items-center justify-center p-4 font-sans">
                     <div className="bg-[#2a2a2a] w-full max-w-md rounded-xl p-8 relative shadow-2xl border border-zinc-700">
-                        <div className="absolute top-3 left-3 w-2 h-2 bg-zinc-600 rounded-full"></div>
-                        <div className="absolute top-3 right-3 w-2 h-2 bg-zinc-600 rounded-full"></div>
+                        <div className="absolute top-3 left-3 w-3 h-3 bg-zinc-600 rounded-full shadow-inner border border-zinc-500"></div>
+                        <div className="absolute top-3 right-3 w-3 h-3 bg-zinc-600 rounded-full shadow-inner border border-zinc-500"></div>
+                        <div className="absolute bottom-3 left-3 w-3 h-3 bg-zinc-600 rounded-full shadow-inner border border-zinc-500"></div>
+                        <div className="absolute bottom-3 right-3 w-3 h-3 bg-zinc-600 rounded-full shadow-inner border border-zinc-500"></div>
+
                         <div className="flex items-center space-x-4 mb-8">
-                            <div className="w-10 h-10 bg-amber-500 rounded flex items-center justify-center font-bold text-zinc-900">RS</div>
-                            <h1 className="text-xl font-bold text-white tracking-tight">RondaSync</h1>
-                        </div>
-                        <h2 className="text-2xl font-bold text-white mb-6">Acceso Operativo</h2>
-                        <form onSubmit={manejarLogin} className="space-y-4">
-                            <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-                                className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:border-amber-500 outline-none" required />
-                            <div className="relative">
-                                <input type={showPassword ? "text" : "password"} placeholder="Contrasena" value={password} onChange={e => setPassword(e.target.value)}
-                                    className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:border-amber-500 outline-none" required />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-4 text-zinc-500">👁️</button>
+                            <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center p-2 shadow-lg">
+                                <div className="grid grid-cols-2 gap-1 w-full h-full">
+                                    <div className="bg-zinc-900 rounded-sm"></div>
+                                    <div className="bg-zinc-900 rounded-sm"></div>
+                                    <div className="bg-zinc-900 rounded-sm"></div>
+                                    <div className="bg-zinc-900 rounded-sm"></div>
+                                </div>
                             </div>
-                            <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-lg uppercase tracking-wider transition-all">
-                                {loading ? 'Validando...' : 'Ingresar'}
+                            <div>
+                                <h1 className="text-2xl font-bold text-white tracking-wide">RondaSync</h1>
+                                <p className="text-xs text-zinc-400 uppercase tracking-widest">Gestion de Mantenimiento</p>
+                            </div>
+                        </div>
+
+                        <div className="mb-8">
+                            <h2 className="text-3xl font-bold text-white mb-2">Bienvenido</h2>
+                            <p className="text-zinc-400 text-sm">Ingresa tus credenciales para continuar</p>
+                        </div>
+
+                        <form onSubmit={manejarLogin} className="space-y-6">
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Email</label>
+                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:outline-none focus:border-amber-500 transition-colors" required />
+                            </div>
+                            <div className="relative">
+                                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Contrasena</label>
+                                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:outline-none focus:border-amber-500 transition-colors" required />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-10 text-zinc-500">👁️</button>
+                            </div>
+                            <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-lg uppercase tracking-wider shadow-lg">
+                                {loading ? 'Ingresando...' : 'Ingresar'}
                             </button>
                         </form>
                     </div>
@@ -65,87 +87,258 @@
         }
 
         // ==========================================
-        // COMPONENTE: INICIO DE TURNO
+        // COMPONENTE: INICIO DE TURNO (GABINETE)
         // ==========================================
         function InicioTurno({ onTurnoIniciado, userEmail }) {
             const [loading, setLoading] = useState(false);
             const [atex, setAtex] = useState(false);
-            const [val, setVal] = useState({ nivel: '', pres: '' });
+            const [scada, setScada] = useState({ nivel: '', presion: '', flujo: '' });
 
             const iniciar = async () => {
-                if (!atex) return alert("Confirma ATEX");
+                if (!atex) return alert("Debes confirmar la revision del protocolo ATEX.");
                 setLoading(true);
                 const { data, error } = await supabaseClient.from('registro_turnos').insert([{
                     operador_nombre: userEmail,
-                    scada_nivel_gasometro: val.nivel || null,
-                    scada_presion_mbar: val.pres || null,
-                    atex_confirmado: atex,
-                    tipo_turno: 'Normal'
+                    tipo_turno: 'Normal',
+                    scada_nivel_gasometro: scada.nivel || null,
+                    scada_presion_mbar: scada.presion || null,
+                    scada_flujo_biogas_nm3h: scada.flujo || null,
+                    atex_confirmado: atex
                 }]).select();
-                if (!error) onTurnoIniciado(data[0].id);
+                
                 setLoading(false);
+                if (error) {
+                    alert("Error guardando turno: " + error.message);
+                } else {
+                    onTurnoIniciado(data[0].id);
+                }
             };
 
             return (
-                <div className="p-4 max-w-md mx-auto space-y-4 bg-gray-50 min-h-screen">
-                    <div className="flex justify-between items-center border-b pb-2">
-                        <h2 className="font-bold text-gray-800">Inicio de Ronda</h2>
-                        <button onClick={() => supabaseClient.auth.signOut()} className="text-xs text-red-600 font-bold">SALIR</button>
+                <div className="p-4 max-w-md mx-auto min-h-screen space-y-4 pb-10 font-sans">
+                    <div className="flex justify-between items-center bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
+                        <div>
+                            <h2 className="text-xl font-bold">Turno Entrante</h2>
+                            <p className="text-xs text-blue-200">Operador: {userEmail}</p>
+                        </div>
+                        <button onClick={() => supabaseClient.auth.signOut()} className="text-xs font-bold bg-red-500 px-3 py-1 rounded hover:bg-red-600">SALIR</button>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border">
-                        <p className="text-xs text-gray-500 uppercase font-bold">Operador Autenticado</p>
-                        <p className="text-sm font-medium text-gray-800">{userEmail}</p>
+
+                    {/* Novedades Turno Anterior */}
+                    <div className="bg-white rounded-xl shadow-sm border-l-4 border-yellow-500 p-4">
+                        <h3 className="text-xs font-bold text-gray-800 uppercase mb-2">Novedades Turno Anterior</h3>
+                        <p className="text-sm text-gray-600">- Soplador 2 con vibracion leve.<br/>- Trampa condensado linea principal requiere drenaje manual.</p>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border space-y-3">
-                        <h3 className="text-xs font-bold text-blue-600">DATOS SCADA</h3>
-                        <div className="grid grid-cols-2 gap-2">
-                            <input type="number" placeholder="Nivel %" className="border p-3 rounded bg-gray-50 text-center" onChange={e => setVal({...val, nivel: e.target.value})} />
-                            <input type="number" placeholder="mbar" className="border p-3 rounded bg-gray-50 text-center" onChange={e => setVal({...val, pres: e.target.value})} />
+
+                    {/* SCADA */}
+                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+                        <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 flex items-center">
+                            <span className="bg-blue-100 text-blue-800 p-1 rounded mr-2">🖥️</span> Modulo SCADA vs Realidad
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500">Nivel Gasometro (%)</label>
+                                <input type="number" step="0.1" className="mt-1 w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" onChange={e => setScada({...scada, nivel: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500">Presion (mbar)</label>
+                                <input type="number" step="0.1" className="mt-1 w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" onChange={e => setScada({...scada, presion: e.target.value})} />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500">Flujo Biogas (Nm3/h)</label>
+                            <input type="number" step="0.1" className="mt-1 w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" onChange={e => setScada({...scada, flujo: e.target.value})} />
                         </div>
                     </div>
-                    <div className="bg-red-50 border-2 border-red-100 p-4 rounded-xl">
-                        <label className="flex items-start space-x-3 cursor-pointer">
-                            <input type="checkbox" onChange={e => setAtex(e.target.checked)} className="h-6 w-6 mt-1" />
-                            <span className="text-xs text-red-900 leading-tight">Confirmo revision de plano ATEX y riesgos del proceso en Consorcio Santa Marta.</span>
+
+                    {/* ATEX */}
+                    <div className="bg-white rounded-xl shadow-sm p-4 border-2 border-red-100">
+                        <h3 className="text-sm font-bold text-red-700 uppercase mb-3 flex items-center">
+                            <span className="mr-2">🛑</span> Protocolo de Seguridad (ATEX)
+                        </h3>
+                        
+                        <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center mb-4 border border-gray-300 relative overflow-hidden">
+                           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/blueprint.png')]"></div>
+                           <span className="font-bold text-gray-600 z-10 bg-white/80 px-4 py-2 rounded shadow">Tocar para ampliar Plano ATEX</span>
+                        </div>
+
+                        <ul className="text-xs text-gray-600 space-y-1 mb-4 list-disc pl-4">
+                            <li>Uso obligatorio de detector %LEL personal.</li>
+                            <li>Prohibido telefonos sin certificacion intrinseca.</li>
+                            <li>Verificar direccion del viento en valvulas de alivio.</li>
+                        </ul>
+
+                        <label className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                            <input type="checkbox" onChange={e => setAtex(e.target.checked)} className="h-6 w-6 text-red-600 mt-1" />
+                            <span className="text-sm text-red-900 font-medium">He revisado los riesgos y el plano ATEX.</span>
                         </label>
                     </div>
-                    <button onClick={iniciar} disabled={!atex || loading} className={`w-full py-4 rounded-xl font-bold text-white ${atex ? 'bg-green-600' : 'bg-gray-400'}`}>
-                        {loading ? 'Sincronizando...' : 'EMPEZAR RECORRIDO'}
+
+                    <button onClick={iniciar} disabled={!atex || loading} className={`w-full font-bold py-4 rounded-xl shadow-lg transition-colors text-white text-lg ${atex ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400'}`}>
+                        {loading ? 'Iniciando...' : 'INICIAR SALIDA A TERRENO'}
                     </button>
                 </div>
             );
         }
 
         // ==========================================
-        // COMPONENTE: RONDA TERRENO
+        // COMPONENTE: RONDA TERRENO (FULL)
         // ==========================================
         function RondaGasometro({ turnoId, onFin }) {
             const [loading, setLoading] = useState(false);
-            const [datos, setDatos] = useState({ lel: '', h: '' });
+            const [fd, setFd] = useState({
+                senalizaciones: false, alarmas: true, 
+                anclajes: 'Optimo', membranaInterna: '', 
+                altura: '', presion: '', lel: '', 
+                guarda: 'Nivel Normal', valvulaIn: false, trampas: false, damper: false, tablero: false,
+                sopladores: 'Operativo', observaciones: ''
+            });
+
+            const handleChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                setFd(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+            };
 
             const guardar = async () => {
                 setLoading(true);
-                await supabaseClient.from('inspeccion_gasometro').insert([{ turno_id: turnoId, lectura_lel_porcentaje: datos.lel || 0, altura_interna_m: datos.h || 0 }]);
-                await supabaseClient.from('registro_turnos').update({ estado_ronda: 'Completada' }).eq('id', turnoId);
+                const { error } = await supabaseClient.from('inspeccion_gasometro').insert([{
+                    turno_id: turnoId,
+                    senalizaciones_ok: fd.senalizaciones, alarmas_desactivadas: fd.alarmas,
+                    estado_anclajes: fd.anclajes, membrana_interna_escotilla: fd.membranaInterna,
+                    altura_interna_m: fd.altura || null, presion_inter_membrana_mbar: fd.presion || null, lectura_lel_porcentaje: fd.lel || null,
+                    nivel_guarda_hidraulica: fd.guarda, valvula_ingreso_ok: fd.valvulaIn, trampas_drenadas: fd.trampas, 
+                    valvula_damper_ok: fd.damper, tablero_electrico_ok: fd.tablero,
+                    estado_sopladores: fd.sopladores, observaciones: fd.observaciones
+                }]);
+                
+                await supabaseClient.from('registro_turnos').update({ estado_ronda: 'Completada', hora_fin: new Date() }).eq('id', turnoId);
                 setLoading(false);
-                onFin();
+                if (error) alert("Error guardando inspeccion: " + error.message);
+                else onFin();
             };
 
+            const LEL_Alert = parseFloat(fd.lel) > 0;
+
             return (
-                <div className="p-4 max-w-md mx-auto space-y-4 bg-gray-50 min-h-screen">
-                    <h2 className="font-bold text-gray-800 border-b pb-2">Gasometro (Campo)</h2>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border space-y-4">
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase">Detector LEL (%)</label>
-                            <input type="number" step="0.1" className="w-full border p-4 rounded-lg bg-gray-50 text-xl font-bold" placeholder="0.0" onChange={e => setDatos({...datos, lel: e.target.value})} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase">Altura Membrana (m)</label>
-                            <input type="number" step="0.1" className="w-full border p-4 rounded-lg bg-gray-50 text-xl font-bold" placeholder="0.0" onChange={e => setDatos({...datos, h: e.target.value})} />
-                        </div>
+                <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-20 font-sans">
+                    <div className="flex items-center space-x-3 bg-[#1e293b] p-4 rounded-xl text-white shadow-lg sticky top-2 z-10">
+                        <div className="bg-blue-500 p-2 rounded-lg">🏗️</div>
+                        <h2 className="text-xl font-bold tracking-wide">Inspeccion Gasometro</h2>
                     </div>
-                    <button onClick={guardar} disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">
-                        {loading ? 'Guardando...' : 'FINALIZAR RECORRIDO'}
+
+                    {/* A. ENTORNO */}
+                    <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+                        <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">A. Entorno y Seguridad Pasiva</h3>
+                        <div className="space-y-3">
+                            <label className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <input type="checkbox" name="senalizaciones" onChange={handleChange} className="h-6 w-6 text-blue-600 rounded" />
+                                <span className="text-sm font-medium text-gray-700">Senalizaciones y letreros OK</span>
+                            </label>
+                            <label className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <input type="checkbox" name="alarmas" defaultChecked onChange={handleChange} className="h-6 w-6 text-blue-600 rounded" />
+                                <span className="text-sm font-medium text-gray-700">Alarmas visibles/sonoras apagadas</span>
+                            </label>
+                        </div>
+                    </section>
+
+                    {/* B. ESTRUCTURA */}
+                    <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+                        <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">B. Integridad Estructural</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Anclajes y Membrana Externa</label>
+                                <select name="anclajes" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 font-medium">
+                                    <option value="Optimo">Optimo (Pernos y sellos OK)</option>
+                                    <option value="Observacion">Con observacion</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Membrana Interna (Por escotilla)</label>
+                                <input type="text" name="membranaInterna" onChange={handleChange} placeholder="Ej: Sin pliegues, sin condensado..." className="w-full border p-3 rounded-lg bg-gray-50" />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* C. INSTRUMENTACION */}
+                    <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+                        <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">C. Instrumentacion de Campo</h3>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Altura Interna (m)</label>
+                                <input type="number" step="0.1" name="altura" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Presion Inter (mbar)</label>
+                                <input type="number" step="0.1" name="presion" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-center font-bold text-lg" placeholder="0.0" />
+                            </div>
+                        </div>
+                        <div className={`p-4 rounded-lg border-2 ${LEL_Alert ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-200'}`}>
+                            <label className={`block text-xs font-bold uppercase mb-1 ${LEL_Alert ? 'text-red-700' : 'text-gray-500'}`}>Detector % LEL</label>
+                            <input type="number" step="0.1" name="lel" onChange={handleChange} className={`w-full border p-3 rounded-lg text-center font-bold text-2xl ${LEL_Alert ? 'bg-red-100 text-red-700 border-red-400' : 'bg-white'}`} placeholder="0.0" />
+                            {LEL_Alert && <p className="text-xs text-red-600 font-bold mt-2">⚠️ ALERTA: Peligro de atmosfera explosiva detectado.</p>}
+                        </div>
+                    </section>
+
+                    {/* D. EQUIPOS */}
+                    <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+                        <h3 className="text-xs font-bold text-blue-800 uppercase border-b pb-2 mb-3">D. Equipos y Valvuleria</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Guarda Hidraulica (Sello)</label>
+                                <select name="guarda" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 font-medium">
+                                    <option value="Nivel Normal">Nivel Normal (Sello optimo)</option>
+                                    <option value="Bajo">Nivel Bajo (Requiere relleno)</option>
+                                    <option value="Rebalse">Rebalse / Apertura</option>
+                                </select>
+                            </div>
+                            
+                            <div className="space-y-2 border-t pt-3">
+                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                                    <input type="checkbox" name="valvulaIn" onChange={handleChange} className="h-5 w-5 text-blue-600" />
+                                    <span className="text-sm text-gray-700">Valvula ingreso biogas OK</span>
+                                </label>
+                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                                    <input type="checkbox" name="trampas" onChange={handleChange} className="h-5 w-5 text-blue-600" />
+                                    <span className="text-sm text-gray-700">Trampas condensado drenadas</span>
+                                </label>
+                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                                    <input type="checkbox" name="damper" onChange={handleChange} className="h-5 w-5 text-blue-600" />
+                                    <span className="text-sm text-gray-700">Valvula damper / salida OK</span>
+                                </label>
+                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                                    <input type="checkbox" name="tablero" onChange={handleChange} className="h-5 w-5 text-blue-600" />
+                                    <span className="text-sm text-gray-700">Tablero electrico OK</span>
+                                </label>
+                            </div>
+
+                            <div className="border-t pt-3">
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Estado Sopladores Aire</label>
+                                <input type="text" name="sopladores" defaultValue="Operativo" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50" />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* FOTOS Y NOTAS */}
+                    <section className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+                        <h3 className="text-xs font-bold text-gray-800 uppercase border-b pb-2 mb-3">Registro Final</h3>
+                        
+                        <div className="mb-4">
+                            <label className="block text-xs font-medium text-gray-500 mb-2">Captura Fotografica</label>
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
+                                <span className="text-2xl mb-2 block">📷</span>
+                                <span className="text-sm text-blue-600 font-bold">Tomar Foto (Terreno)</span>
+                                <input type="file" accept="image/*" capture="environment" className="hidden" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Observaciones Generales</label>
+                            <textarea name="observaciones" onChange={handleChange} className="w-full border p-3 rounded-lg bg-gray-50 text-sm" rows="3" placeholder="Clima, olores, anomalias..."></textarea>
+                        </div>
+                    </section>
+
+                    <button onClick={guardar} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-xl shadow-xl text-lg uppercase tracking-wide">
+                        {loading ? 'Guardando Registro...' : 'Finalizar Modulo Gasometro'}
                     </button>
                 </div>
             );
@@ -158,10 +351,12 @@
             const [user, setUser] = useState(null);
             const [vista, setVista] = useState('inicio');
             const [turnoId, setTurnoId] = useState(null);
+            const [authChecking, setAuthChecking] = useState(true);
 
             useEffect(() => {
                 supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     setUser(session?.user ?? null);
+                    setAuthChecking(false);
                 });
                 const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
                     setUser(session?.user ?? null);
@@ -169,19 +364,22 @@
                 return () => subscription.unsubscribe();
             }, []);
 
+            if (authChecking) return <div className="min-h-screen bg-[#1e1e1e]"></div>;
             if (!user) return <PantallaLogin />;
 
             return (
-                <div className="bg-gray-200 min-h-screen">
+                <div className="bg-gray-100 min-h-screen selection:bg-amber-200">
                     {vista === 'inicio' && <InicioTurno userEmail={user.email} onTurnoIniciado={(id) => {setTurnoId(id); setVista('gasometro');}} />}
                     {vista === 'gasometro' && <RondaGasometro turnoId={turnoId} onFin={() => setVista('fin')} />}
                     {vista === 'fin' && (
-                        <div className="flex flex-col items-center justify-center min-h-screen p-6">
-                            <div className="bg-white p-8 rounded-2xl shadow-xl text-center w-full max-w-sm">
-                                <div className="text-5xl mb-4">✅</div>
-                                <h2 className="text-2xl font-bold text-gray-800">Sincronizado</h2>
-                                <p className="text-gray-500 text-sm mt-2">La ronda ha sido registrada en el servidor.</p>
-                                <button onClick={() => setVista('inicio')} className="mt-8 w-full bg-zinc-900 text-white py-4 rounded-xl font-bold">NUEVA RONDA</button>
+                        <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#1e1e1e]">
+                            <div className="bg-[#2a2a2a] p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm border border-zinc-700">
+                                <div className="text-6xl mb-6">✅</div>
+                                <h2 className="text-2xl font-bold text-white tracking-wide">Registro Completado</h2>
+                                <p className="text-zinc-400 text-sm mt-2 mb-8">La ronda del gasometro ha sido asegurada en la base de datos.</p>
+                                <button onClick={() => setVista('inicio')} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-xl shadow-lg transition-all uppercase tracking-wider">
+                                    Menu Principal
+                                </button>
                             </div>
                         </div>
                     )}
