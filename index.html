@@ -240,7 +240,7 @@
         }
 
         // ==========================================
-        // FORMULARIO GASÓMETRO (PUNTOS DE CONTROL SEPARADOS)
+        // FORMULARIO GASÓMETRO (CON MENÚ DE FALLAS DESPLEGABLE)
         // ==========================================
         function FormularioGasometro({ turnoId, prevData, onTerminado }) {
             const [fd, setFd] = useState({ anclajes:'Optimo', altura:'', presion:'', lel:'', guarda:'Nivel Normal', sopladores_ok: true, observaciones:'' });
@@ -250,10 +250,11 @@
 
             const p = parseFloat(fd.presion); const h = parseFloat(fd.altura); const lel = parseFloat(fd.lel);
             const isCritical = p >= 25 || h > 10.1;
+            
+            // Si el estado no es Optimo, requiere observacion
             const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || !fd.sopladores_ok;
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
             
-            // Regla estricta: Las 6 fotos deben estar cargadas
             const fotosCompletas = fotos.anclaje && fotos.altura && fotos.presion && fotos.lel && fotos.guarda && fotos.sopladores;
             const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
             
@@ -265,17 +266,36 @@
                         <span className="text-2xl mr-3">🏗️</span><h2 className="text-lg font-bold">Puntos de Control: Gasometro</h2>
                     </div>
                     
-                    {/* PC 1: Anclajes */}
+                    {/* PC 1: Anclajes (CON DESPLEGABLE DE FALLAS) */}
                     <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
                         <div className="flex justify-between items-center border-b pb-2 mb-3">
                             <h3 className="text-sm font-bold text-gray-800 uppercase">PC-1: Sistema de Anclaje</h3>
                         </div>
-                        <p className="text-xs text-gray-500 mb-2">Verifique integridad de pernos y flanges base.</p>
-                        <select onChange={e=>setFd({...fd, anclajes:e.target.value})} className={`w-full border p-3 rounded font-bold ${fd.anclajes !== 'Optimo' ? 'bg-yellow-50 text-yellow-800' : 'bg-gray-50'}`}>
-                            <option value="Optimo">Estado Optimo (Sin fugas)</option>
-                            <option value="Observacion">Con Observacion</option>
+                        <p className="text-xs text-gray-500 mb-2">Verifique pernos, flanges y membranas en la base.</p>
+                        
+                        <select onChange={e=>setFd({...fd, anclajes:e.target.value})} className={`w-full border p-3 rounded font-bold text-sm ${fd.anclajes !== 'Optimo' ? 'bg-yellow-50 text-yellow-800 border-yellow-300' : 'bg-gray-50'}`}>
+                            <option value="Optimo">Estado Optimo (Sin anomalias)</option>
+                            
+                            <optgroup label="Fugas Detectadas">
+                                <option value="Fuga de biogas por perno">Fuga de biogas por perno de anclaje</option>
+                                <option value="Fuga de biogas por brida">Fuga de biogas por linea de brida/flange</option>
+                                <option value="Fuga de aire entre membranas">Fuga de aire entre membranas (base exterior)</option>
+                            </optgroup>
+                            
+                            <optgroup label="Problemas Mecanicos/Estructurales">
+                                <option value="Rodon montado/mordido">Rodon de membrana montado o mordido</option>
+                                <option value="Doblez anormal membrana">Doblez o pliegue anormal en membrana</option>
+                                <option value="Pernos sueltos/cortados">Pernos de anclaje sueltos, cortados o faltantes</option>
+                                <option value="Corrosion severa">Corrosion severa en pernos o flanges</option>
+                                <option value="Acumulacion de agua/suciedad">Acumulacion de agua/suciedad en perfil base</option>
+                            </optgroup>
+                            
+                            <optgroup label="Otros">
+                                <option value="Otra anomalia">Otra anomalia (Detallar al final)</option>
+                            </optgroup>
                         </select>
-                        <FotoUploader idCampo="anclaje" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Pernos Anclaje" />
+
+                        <FotoUploader idCampo="anclaje" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto de Base/Anclajes" />
                     </div>
 
                     {/* PC 2: Instrumentos Separados */}
@@ -334,7 +354,7 @@
                     <div className="bg-white p-4 rounded-xl border shadow-sm">
                          <label className="text-xs text-gray-500 font-bold">Observaciones Generales</label>
                          {observationMissing && <p className="text-xs text-red-600 font-bold my-1">⚠️ Observacion OBLIGATORIA por anomalias detectadas.</p>}
-                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className="w-full border p-2 rounded mt-1 bg-gray-50 text-sm" rows="3" placeholder="Detalle cualquier anomalia mecanica o de proceso..."></textarea>
+                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border p-2 rounded mt-1 text-sm ${observationMissing ? 'bg-red-50 border-red-300' : 'bg-gray-50'}`} rows="3" placeholder="Detalle la anomalia reportada..."></textarea>
                     </div>
 
                     {!fotosCompletas && <p className="text-center text-xs text-red-600 font-bold px-4">Debe capturar las 6 fotografias obligatorias para habilitar el guardado.</p>}
