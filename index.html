@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RondaSync - PTAS Talagante</title>
+    <title>RondaSync - PTAR Talagante</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -14,9 +14,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // ==========================================
-        // CONFIGURACIÓN DE SUPABASE
-        // ==========================================
         const SUPABASE_URL = 'https://cbvipsjpvlgyipifidyo.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_-9xy9fwszhg5RMqlilNn-A_wnK2VGCb';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -24,98 +21,99 @@
         const { useState, useEffect } = React;
 
         // ==========================================
-        // COMPONENTE: ETIQUETA FANTASMA (MEMORIA OPERATIVA)
+        // COMPONENTE: MULTI-FOTO UPLOADER (HASTA 3 FOTOS)
         // ==========================================
-        const Fantasma = ({ valor }) => {
-            if (valor === null || valor === undefined || valor === '') return null;
-            return <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold">Ant: {valor}</span>;
-        };
+        function MultiFotoUploader({ idCampo, turnoId, onFotosActualizadas, titulo }) {
+            const [fotos, setFotos] = useState([]); // Array de objetos {localUrl, realFile, remoteUrl}
+            const [subiendoIndex, setSubiendoIndex] = useState(null);
 
-        // ==========================================
-        // COMPONENTE: CARGADOR DE FOTOS CON PREVIEW
-        // ==========================================
-        function FotoUploader({ idCampo, turnoId, onFotoSubida, titulo }) {
-            const [subiendo, setSubiendo] = useState(false);
-            const [previsualizacionLocal, setPrevisualizacionLocal] = useState(null);
-            const [archivoParaSubir, setArchivoParaSubir] = useState(null);
-            const [urlFinal, setUrlFinal] = useState(null);
-
-            const manejarCapturaLocal = (e) => {
+            const manejarCaptura = (e) => {
                 const archivo = e.target.files[0];
-                if (!archivo) return;
-                setArchivoParaSubir(archivo);
-                setPrevisualizacionLocal(URL.createObjectURL(archivo)); 
-                setUrlFinal(null);
+                if (!archivo || fotos.length >= 3) return;
+
+                const nuevaFoto = {
+                    localUrl: URL.createObjectURL(archivo),
+                    realFile: archivo,
+                    remoteUrl: null
+                };
+                setFotos([...fotos, nuevaFoto]);
             };
 
-            const confirmarYSubir = async () => {
-                if (!archivoParaSubir) return;
-                setSubiendo(true);
-                
-                const ext = archivoParaSubir.name.split('.').pop();
-                const nombreArchivo = `${turnoId}-${idCampo}-${Date.now()}.${ext}`;
-                
-                const { error } = await supabaseClient.storage
-                    .from('inspeccion_fotos')
-                    .upload(nombreArchivo, archivoParaSubir);
+            const subirFoto = async (index) => {
+                const foto = fotos[index];
+                if (!foto.realFile || foto.remoteUrl) return;
+
+                setSubiendoIndex(index);
+                const ext = foto.realFile.name.split('.').pop();
+                const nombreArchivo = `${turnoId}-${idCampo}-${index}-${Date.now()}.${ext}`;
+
+                const { error } = await supabaseClient.storage.from('inspeccion_fotos').upload(nombreArchivo, foto.realFile);
                 
                 if (error) {
-                    alert("Error subiendo foto: " + error.message);
-                    setPrevisualizacionLocal(null);
+                    alert("Error: " + error.message);
                 } else {
-                    const { data } = supabaseClient.storage
-                        .from('inspeccion_fotos')
-                        .getPublicUrl(nombreArchivo);
-                    setUrlFinal(data.publicUrl);
-                    onFotoSubida(idCampo, data.publicUrl);
+                    const { data } = supabaseClient.storage.from('inspeccion_fotos').getPublicUrl(nombreArchivo);
+                    const nuevasFotos = [...fotos];
+                    nuevasFotos[index].remoteUrl = data.publicUrl;
+                    setFotos(nuevasFotos);
+                    // Notificar al padre con el array de URLs remotas
+                    onFotosActualizadas(idCampo, nuevasFotos.map(f => f.remoteUrl).filter(url => url !== null));
                 }
-                setSubiendo(false);
+                setSubiendoIndex(null);
             };
 
-            const reintentarCaptura = () => {
-                setPrevisualizacionLocal(null);
-                setArchivoParaSubir(null);
-                setUrlFinal(null);
+            const eliminarFoto = (index) => {
+                const nuevasFotos = fotos.filter((_, i) => i !== index);
+                setFotos(nuevasFotos);
+                onFotosActualizadas(idCampo, nuevasFotos.map(f => f.remoteUrl).filter(url => url !== null));
             };
 
             return (
-                <div className={`mt-2 p-3 border-2 rounded-lg transition-all ${urlFinal ? 'border-emerald-500 bg-emerald-50' : previsualizacionLocal ? 'border-blue-400 bg-blue-50' : 'border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100'}`}>
-                    {!previsualizacionLocal && !subiendo && !urlFinal && (
-                        <label className="cursor-pointer flex flex-col items-center justify-center py-2">
-                            <span className="text-3xl mb-1">📷</span>
-                            <span className="text-xs text-blue-700 font-bold uppercase">{titulo}</span>
-                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={manejarCapturaLocal} />
-                        </label>
-                    )}
+                <div className="mt-3 space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                        {fotos.map((foto, index) => (
+                            <div key={index} className="relative group">
+                                <img src={foto.localUrl} className="h-24 w-full object-cover rounded-lg border-2 border-white shadow-sm" />
+                                
+                                {!foto.remoteUrl && subiendoIndex !== index && (
+                                    <button onClick={() => subirFoto(index)} className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg">
+                                        <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded">SUBIR</span>
+                                    </button>
+                                )}
 
-                    {previsualizacionLocal && !urlFinal && (
-                        <div className="text-center space-y-3">
-                            <img src={previsualizacionLocal} alt="Previsualizacion" className="mx-auto h-40 rounded-lg shadow-md border-2 border-white object-cover" />
-                            {subiendo ? (
-                                <div className="text-sm font-bold text-blue-600 animate-pulse py-2">Subiendo a la nube...</div>
-                            ) : (
-                                <div className="flex justify-center space-x-3 pt-1">
-                                    <button onClick={confirmarYSubir} className="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow hover:bg-emerald-700">📤 SUBIR</button>
-                                    <button onClick={reintentarCaptura} className="bg-red-100 text-red-700 text-xs font-bold px-4 py-2 rounded-lg">🔄 REINTENTAR</button>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                {subiendoIndex === index && (
+                                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-lg">
+                                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                )}
 
-                    {urlFinal && (
-                        <div className="flex items-center space-x-3 p-1">
-                            <span className="text-xl">✅</span>
-                            <div className="flex-1">
-                                <span className="text-sm font-bold text-emerald-700">Evidencia Asegurada</span>
+                                {foto.remoteUrl && (
+                                    <div className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-md">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
+                                )}
+
+                                <button onClick={() => eliminarFoto(index)} className="absolute -top-1 -left-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-md">×</button>
                             </div>
-                        </div>
-                    )}
+                        ))}
+                        
+                        {fotos.length < 3 && (
+                            <label className="h-24 border-2 border-dashed border-blue-300 bg-blue-50 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors">
+                                <span className="text-2xl text-blue-500">+</span>
+                                <span className="text-[10px] font-bold text-blue-600 uppercase">Foto {fotos.length + 1}</span>
+                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={manejarCaptura} />
+                            </label>
+                        )}
+                    </div>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight text-center">{titulo}</p>
                 </div>
             );
         }
 
+        const Fantasma = ({ valor }) => (valor !== null && valor !== undefined) ? <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold">Ant: {valor}</span> : null;
+
         // ==========================================
-        // COMPONENTE: PANTALLA LOGIN
+        // COMPONENTE: LOGIN
         // ==========================================
         function PantallaLogin() {
             const [email, setEmail] = useState('');
@@ -127,36 +125,22 @@
                 e.preventDefault();
                 setLoading(true);
                 const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) alert("Error de ingreso: " + error.message);
+                if (error) alert("Error: " + error.message);
                 setLoading(false);
             };
 
             return (
-                <div className="min-h-screen bg-[#1e1e1e] flex items-center justify-center p-4 font-sans">
-                    <div className="bg-[#2a2a2a] w-full max-w-md rounded-xl p-8 shadow-2xl border border-zinc-700">
+                <div className="min-h-screen bg-[#1e1e1e] flex items-center justify-center p-4 font-sans text-white">
+                    <div className="bg-[#2a2a2a] w-full max-w-md rounded-2xl p-8 shadow-2xl border border-zinc-700">
                         <div className="flex items-center space-x-4 mb-8">
-                            <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center p-2 shadow-lg">
-                                <span className="font-bold text-zinc-900">RS</span>
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-white tracking-wide">RondaSync</h1>
-                                <p className="text-xs text-zinc-400 uppercase tracking-widest">PTAR Talagante</p>
-                            </div>
+                            <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center p-2 shadow-lg"><span className="font-bold text-zinc-900 text-xl">RS</span></div>
+                            <div><h1 className="text-2xl font-bold tracking-tight">RondaSync</h1><p className="text-xs text-zinc-400 uppercase tracking-widest">PTAR Talagante</p></div>
                         </div>
-                        <h2 className="text-3xl font-bold text-white mb-6">Bienvenido</h2>
-                        <form onSubmit={manejarLogin} className="space-y-6">
-                            <div>
-                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Email</label>
-                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:border-amber-500 outline-none" required />
-                            </div>
-                            <div className="relative">
-                                <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Contraseña</label>
-                                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 text-white rounded-lg p-4 focus:border-amber-500 outline-none" required />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-10 text-zinc-500">👁️</button>
-                            </div>
-                            <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-lg uppercase tracking-wider">
-                                {loading ? 'Ingresando...' : 'Ingresar'}
-                            </button>
+                        <h2 className="text-3xl font-bold mb-6">Bienvenido</h2>
+                        <form onSubmit={manejarLogin} className="space-y-5">
+                            <div><label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Correo Electronico</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 focus:border-amber-500 outline-none transition-all" required /></div>
+                            <div className="relative"><label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Contraseña</label><input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 focus:border-amber-500 outline-none transition-all" required /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-11 text-zinc-500">👁️</button></div>
+                            <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-black py-4 rounded-xl uppercase tracking-widest shadow-xl transition-all">{loading ? 'Verificando...' : 'Entrar al Sistema'}</button>
                         </form>
                     </div>
                 </div>
@@ -164,93 +148,44 @@
         }
 
         // ==========================================
-        // VISTAS PREVIAS (MÓDULOS DEL HUB)
+        // VISTAS PREVIAS (RESUMEN, SCADA, RIESGOS)
         // ==========================================
         function VistaResumen({ onComplete }) {
             return (
-                <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
-                        <h2 className="text-xl font-bold">Resumen Turno Anterior</h2>
+                <div className="p-4 max-w-md mx-auto min-h-screen font-sans">
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg mb-6"><h2 className="text-xl font-bold">Resumen Turno Anterior</h2></div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 shadow-sm">
+                        <h3 className="text-sm font-black text-yellow-800 uppercase mb-3">Novedades Reportadas</h3>
+                        <ul className="text-sm text-yellow-900 space-y-2 list-disc pl-4 font-medium"><li>Sin novedades críticas registradas en el turno anterior.</li></ul>
                     </div>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 shadow-sm">
-                        <h3 className="text-sm font-bold text-yellow-800 uppercase mb-3">Novedades Reportadas</h3>
-                        <ul className="text-sm text-yellow-900 space-y-2 list-disc pl-4">
-                            <li>Operación normal. Reemplace o revise en la siguiente ronda.</li>
-                        </ul>
-                    </div>
-                    <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg mt-8">
-                        HE LEIDO Y COMPRENDIDO
-                    </button>
+                    <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest">Entendido</button>
                 </div>
             );
         }
 
         function VistaScada({ datosGuardados, prevData, onComplete }) {
             const [scada, setScada] = useState(datosGuardados || {});
-            
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
-                        <h2 className="text-xl font-bold">Ingreso SCADA (WinCC)</h2>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-5">
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Ingreso SCADA (WinCC)</h2></div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-6">
                         <div>
-                            <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Digestor</h4>
-                            <div className="grid grid-cols-3 gap-2">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Nivel(cm)</label><Fantasma valor={prevData?.scada_dig_nivel_cm} /></div>
-                                    <input type="number" value={scada.dig_nivel||''} onChange={e => setScada({...scada, dig_nivel: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Pres.(mbar)</label><Fantasma valor={prevData?.scada_dig_presion_mbar} /></div>
-                                    <input type="number" value={scada.dig_presion||''} onChange={e => setScada({...scada, dig_presion: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Temp(°C)</label><Fantasma valor={prevData?.scada_dig_temp_c} /></div>
-                                    <input type="number" value={scada.dig_temp||''} onChange={e => setScada({...scada, dig_temp: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
+                            <h4 className="text-xs font-black text-blue-600 uppercase mb-3 border-b pb-1">1. Digestor</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Nivel (cm)</label><Fantasma valor={prevData?.scada_dig_nivel_cm} /></div><input type="number" value={scada.dig_nivel||''} onChange={e => setScada({...scada, dig_nivel: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Pres. (mbar)</label><Fantasma valor={prevData?.scada_dig_presion_mbar} /></div><input type="number" value={scada.dig_presion||''} onChange={e => setScada({...scada, dig_presion: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Temp (°C)</label><Fantasma valor={prevData?.scada_dig_temp_c} /></div><input type="number" value={scada.dig_temp||''} onChange={e => setScada({...scada, dig_temp: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" /></div>
                             </div>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Gasometro</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Nivel(%)</label><Fantasma valor={prevData?.scada_nivel_gasometro} /></div>
-                                    <input type="number" value={scada.gas_nivel||''} onChange={e => setScada({...scada, gas_nivel: e.target.value})} className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Pres.(mbar)</label><Fantasma valor={prevData?.scada_presion_mbar} /></div>
-                                    <input type="number" value={scada.gas_presion||''} onChange={e => setScada({...scada, gas_presion: e.target.value})} className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" />
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 border-b pb-1">Compresores y Consumos</h4>
-                            <div className="grid grid-cols-2 gap-2 mb-2">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Comp.</label><Fantasma valor={prevData?.scada_flujo_biogas_nm3h} /></div>
-                                    <input type="number" value={scada.comp_flujo||''} onChange={e => setScada({...scada, comp_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Pres. Imp.</label><Fantasma valor={prevData?.scada_comp_presion_imp_mbar} /></div>
-                                    <input type="number" value={scada.comp_pres_imp||''} onChange={e => setScada({...scada, comp_pres_imp: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Cald.</label><Fantasma valor={prevData?.scada_cald_flujo_m3h} /></div>
-                                    <input type="number" value={scada.cald_flujo||''} onChange={e => setScada({...scada, cald_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold">Flujo Antorchas</label><Fantasma valor={prevData?.scada_ant_flujo_m3h} /></div>
-                                    <input type="number" value={scada.ant_flujo||''} onChange={e => setScada({...scada, ant_flujo: e.target.value})} className="w-full border p-2 rounded bg-gray-50 text-center font-bold" />
-                                </div>
+                            <h4 className="text-xs font-black text-amber-600 uppercase mb-3 border-b pb-1">2. Gasometro</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Nivel (%)</label><Fantasma valor={prevData?.scada_nivel_gasometro} /></div><input type="number" value={scada.gas_nivel||''} onChange={e => setScada({...scada, gas_nivel: e.target.value})} className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Pres. (mbar)</label><Fantasma valor={prevData?.scada_presion_mbar} /></div><input type="number" value={scada.gas_presion||''} onChange={e => setScada({...scada, gas_presion: e.target.value})} className="w-full border p-2 rounded bg-amber-50 text-center font-bold text-amber-900 border-amber-200" /></div>
                             </div>
                         </div>
                     </div>
-                    <button onClick={() => onComplete(scada)} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg mt-8">
-                        GUARDAR SCADA
-                    </button>
+                    <button onClick={() => onComplete(scada)} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-8 uppercase tracking-widest">Confirmar Datos SCADA</button>
                 </div>
             );
         }
@@ -258,32 +193,16 @@
         function VistaRiesgos({ onComplete }) {
             const [c, setC] = useState({ epp1:false, epp2:false, epp3:false, epp4:false, ax1:false, ax2:false, ax3:false });
             const listo = c.epp1 && c.epp2 && c.epp3 && c.epp4 && c.ax1 && c.ax2 && c.ax3;
-            
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
-                        <h2 className="text-xl font-bold">Protocolos de Seguridad</h2>
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Seguridad y EPP</h2></div>
+                    <div className="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 className="text-xs font-black text-gray-800 uppercase mb-4 border-b pb-2">Implementos de Seguridad</h3>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100"><input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-sm font-medium">Casco, Lentes y Zapatos de Seguridad</span></label>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100"><input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-sm font-medium">Detector de Gases Personal (ON)</span></label>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100"><input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-sm font-medium">Radio Intrinsecamente Segura</span></label>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm border p-4">
-                        <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 border-b pb-2">Uso de EPP</h3>
-                        <div className="space-y-2">
-                            <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-5 w-5 text-blue-600"/> <span className="text-sm">Casco, Lentes y Zapatos</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-5 w-5 text-blue-600"/> <span className="text-sm">Detector de Gases (LEL/H2S) ON</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-5 w-5 text-blue-600"/> <span className="text-sm">Radio intrinsecamente segura</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-5 w-5 text-blue-600"/> <span className="text-sm">Sin telefonos celulares estandar</span></label>
-                        </div>
-                    </div>
-                    <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 p-4">
-                        <h3 className="text-sm font-bold text-red-800 uppercase mb-3 border-b border-red-200 pb-2">Riesgo ATEX</h3>
-                        <div className="space-y-2">
-                            <label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax1:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z1: 1.5m de Guarda Hidraulica</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax2:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z1: 1.0m de Valvulas y Purgas</span></label>
-                            <label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax3:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z2: 0.35m de Bridas/Inst.</span></label>
-                        </div>
-                    </div>
-                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-bold py-4 rounded-xl shadow-lg mt-8 ${listo ? 'bg-emerald-600' : 'bg-gray-400'}`}>
-                        CONFIRMAR Y VOLVER
-                    </button>
+                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest transition-all ${listo ? 'bg-emerald-600' : 'bg-gray-400 opacity-50'}`}>Continuar</button>
                 </div>
             );
         }
@@ -294,9 +213,7 @@
         function HubCentral({ userEmail, prevTurnoData, avanzarAInstalaciones }) {
             const [fechaHora, setFechaHora] = useState(new Date());
             const [turnoDetectado, setTurnoDetectado] = useState('');
-            const [hubState, setHubState] = useState({ 
-                resumenOk: false, scadaData: null, riesgosOk: false, subvistaActiva: 'hub' 
-            });
+            const [hubState, setHubState] = useState({ resumenOk: false, scadaData: null, riesgosOk: false, subvistaActiva: 'hub' });
 
             useEffect(() => {
                 const timer = setInterval(() => setFechaHora(new Date()), 1000);
@@ -314,65 +231,36 @@
 
             return (
                 <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans">
-                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl flex flex-col justify-between">
-                        <div className="flex justify-between items-start border-b border-slate-600 pb-3 mb-3">
-                            <div>
-                                <h1 className="text-2xl font-black tracking-wide">RondaSync</h1>
-                                <p className="text-xs text-amber-400 font-bold uppercase mt-1">PTAS Talagante</p>
-                            </div>
-                            <button onClick={() => supabaseClient.auth.signOut()} className="text-[10px] font-bold bg-red-500/20 text-red-300 px-2 py-1 rounded">SALIR</button>
+                    <div className="bg-[#1e293b] p-6 rounded-3xl text-white shadow-xl space-y-4">
+                        <div className="flex justify-between items-start border-b border-slate-700 pb-4">
+                            <div><h1 className="text-2xl font-black tracking-tighter">RondaSync</h1><p className="text-[10px] text-amber-400 font-black uppercase tracking-widest">PTAR Talagante</p></div>
+                            <button onClick={() => supabaseClient.auth.signOut()} className="text-[10px] font-black bg-red-500/20 text-red-300 px-3 py-1.5 rounded-full border border-red-500/30">SALIR</button>
                         </div>
                         <div className="flex justify-between items-end">
-                            <div>
-                                <p className="text-xs text-slate-400 uppercase">Bienvenido</p>
-                                <p className="text-sm font-medium">{userEmail}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm font-bold text-slate-200">{fechaHora.toLocaleDateString()}</p>
-                                <p className="text-2xl font-light text-white">{fechaHora.toLocaleTimeString()}</p>
-                            </div>
+                            <div><p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Operador</p><p className="text-sm font-bold">{userEmail}</p></div>
+                            <div className="text-right"><p className="text-xs font-bold text-slate-300">{fechaHora.toLocaleDateString()}</p><p className="text-xl font-light text-white">{fechaHora.toLocaleTimeString()}</p></div>
                         </div>
                     </div>
-                    
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
-                        <div>
-                            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Turno de Operacion</p>
-                            <select value={turnoDetectado} onChange={(e) => setTurnoDetectado(e.target.value)} className="font-bold text-lg text-gray-800 bg-transparent outline-none cursor-pointer">
-                                <option value="08:00 a 20:00">08:00 a 20:00 (Dia)</option>
-                                <option value="20:00 a 08:00">20:00 a 08:00 (Noche)</option>
-                            </select>
-                        </div>
-                        <div className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Auto</div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
+                        <div><p className="text-[10px] text-gray-500 font-black uppercase mb-1">Turno de Operacion</p><select value={turnoDetectado} onChange={(e) => setTurnoDetectado(e.target.value)} className="font-black text-lg text-gray-800 bg-transparent outline-none cursor-pointer"><option value="08:00 a 20:00">08:00 a 20:00</option><option value="20:00 a 08:00">20:00 a 08:00</option></select></div>
+                        <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Auto</div>
                     </div>
-                    
                     <div className="space-y-3">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase px-1">Requisitos Previos</h3>
-                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'resumen'})} className={`w-full flex justify-between p-4 rounded-xl border-2 transition ${hubState.resumenOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}>
-                            <div className="flex items-center space-x-3"><span className="text-xl">{hubState.resumenOk ? '✅' : '📄'}</span><span className={`font-bold ${hubState.resumenOk ? 'text-emerald-800' : 'text-gray-700'}`}>1. Turno Anterior</span></div>
-                        </button>
-                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'scada'})} className={`w-full flex justify-between p-4 rounded-xl border-2 transition ${scadaOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}>
-                            <div className="flex items-center space-x-3"><span className="text-xl">{scadaOk ? '✅' : '🖥️'}</span><span className={`font-bold ${scadaOk ? 'text-emerald-800' : 'text-gray-700'}`}>2. Datos SCADA</span></div>
-                        </button>
-                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'riesgos'})} className={`w-full flex justify-between p-4 rounded-xl border-2 transition ${hubState.riesgosOk ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-200'}`}>
-                            <div className="flex items-center space-x-3"><span className="text-xl">{hubState.riesgosOk ? '✅' : '🛑'}</span><span className={`font-bold ${hubState.riesgosOk ? 'text-emerald-800' : 'text-gray-700'}`}>3. Riesgos y EPP</span></div>
-                        </button>
+                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'resumen'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${hubState.resumenOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{hubState.resumenOk ? '✅' : '📋'}</span><span className={`font-black text-sm uppercase ${hubState.resumenOk ? 'text-emerald-800' : 'text-gray-700'}`}>Turno Anterior</span></div></button>
+                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'scada'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${scadaOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{scadaOk ? '✅' : '🖥️'}</span><span className={`font-black text-sm uppercase ${scadaOk ? 'text-emerald-800' : 'text-gray-700'}`}>Datos SCADA</span></div></button>
+                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'riesgos'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${hubState.riesgosOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{hubState.riesgosOk ? '✅' : '🛑'}</span><span className={`font-black text-sm uppercase ${hubState.riesgosOk ? 'text-emerald-800' : 'text-gray-700'}`}>Riesgos y EPP</span></div></button>
                     </div>
-                    
-                    <div className="pt-4 pb-10">
-                        <button onClick={() => avanzarAInstalaciones(turnoDetectado, hubState.scadaData)} disabled={!listoParaRonda} className={`w-full font-black py-5 rounded-2xl shadow-xl text-lg uppercase tracking-widest transition-all ${listoParaRonda ? 'bg-amber-500 text-zinc-900' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
-                            COMENZAR RONDA FÍSICA
-                        </button>
+                    <div className="pt-6">
+                        <button onClick={() => avanzarAInstalaciones(turnoDetectado, hubState.scadaData)} disabled={!listoParaRonda} className={`w-full font-black py-6 rounded-3xl shadow-2xl text-lg uppercase tracking-[0.2em] transition-all transform active:scale-95 ${listoParaRonda ? 'bg-amber-500 text-zinc-900' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>COMENZAR RONDA</button>
                     </div>
                 </div>
             );
         }
 
         // ==========================================
-        // COMPONENTE: MENÚ DE INSTALACIONES (NUEVO DISEÑO FOTORREALISTA)
+        // COMPONENTE: MENÚ DE INSTALACIONES (FOTOS REALES)
         // ==========================================
         function MenuInstalaciones({ areasDone, irAGasometro, finalizarTurno, loadingDb }) {
-            
-            // --- URLs PÚBLICAS DE TUS FOTOS REALES EN SUPABASE ---
             const urlDigestor = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Digestor.jpg";
             const urlGasometro = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Gasometro%20vista%20general.jpeg";
             const urlCompresores = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Sala%20de%20Compresores.jpg";
@@ -380,78 +268,30 @@
             const urlAntorchas = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Antorchas.jpeg";
 
             return (
-                <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-100">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg flex items-center justify-between">
-                        <h2 className="text-lg font-bold">Ronda en Curso</h2>
-                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded animate-pulse shadow-md">EN TERRENO</span>
+                <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-50">
+                    <div className="bg-[#1e293b] p-4 rounded-2xl text-white shadow-xl flex items-center justify-between">
+                        <h2 className="text-lg font-black uppercase tracking-tight">Ronda en Curso</h2>
+                        <span className="bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full animate-pulse shadow-lg uppercase">En Terreno</span>
                     </div>
-                    
                     <div>
-                        <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 px-1">Selecciona Instalación</h3>
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 px-2 tracking-[0.2em]">Instalaciones PTAR</h3>
                         <div className="grid grid-cols-2 gap-4">
-                            
-                            {/* Biodigestor (Desactivado) */}
-                            <button disabled className="bg-white p-3 rounded-xl border-2 border-gray-200 opacity-70 text-left relative shadow-sm">
-                                <div className="h-20 w-full mb-2 rounded-lg overflow-hidden border border-gray-200">
-                                    <img src={urlDigestor} alt="Digestor" className="w-full h-full object-cover grayscale" />
-                                </div>
-                                <span className="font-bold text-sm text-gray-600 block">Biodigestor</span>
-                            </button>
-
-                            {/* Gasómetro (Activo) */}
-                            <button onClick={irAGasometro} className={`p-3 rounded-xl border-2 text-left transition relative shadow-md ${areasDone.gasometro ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-blue-400 hover:border-blue-600'}`}>
-                                {areasDone.gasometro && <div className="absolute top-2 right-2 z-10 bg-emerald-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs shadow-md border-2 border-white">✓</div>}
-                                <div className={`h-20 w-full mb-2 rounded-lg overflow-hidden border-2 ${areasDone.gasometro ? 'border-emerald-400' : 'border-blue-200'}`}>
-                                    <img src={urlGasometro} alt="Gasometro" className="w-full h-full object-cover" />
-                                </div>
-                                <span className={`font-bold text-sm block ${areasDone.gasometro ? 'text-emerald-800' : 'text-blue-900'}`}>Gasómetro</span>
-                            </button>
-
-                            {/* Compresores (Desactivado) */}
-                            <button disabled className="bg-white p-3 rounded-xl border-2 border-gray-200 opacity-70 text-left relative shadow-sm">
-                                <div className="h-20 w-full mb-2 rounded-lg overflow-hidden border border-gray-200">
-                                    <img src={urlCompresores} alt="Compresores" className="w-full h-full object-cover grayscale" />
-                                </div>
-                                <span className="font-bold text-sm text-gray-600 block">Compresores</span>
-                            </button>
-
-                            {/* Calderas (Desactivado) */}
-                            <button disabled className="bg-white p-3 rounded-xl border-2 border-gray-200 opacity-70 text-left relative shadow-sm">
-                                <div className="h-20 w-full mb-2 rounded-lg overflow-hidden border border-gray-200">
-                                    <img src={urlCalderas} alt="Calderas" className="w-full h-full object-cover grayscale" />
-                                </div>
-                                <span className="font-bold text-sm text-gray-600 block">Calderas</span>
-                            </button>
-
-                            {/* Antorcha 1 (Desactivado) */}
-                            <button disabled className="bg-white p-3 rounded-xl border-2 border-gray-200 opacity-70 text-left relative shadow-sm">
-                                <div className="h-20 w-full mb-2 rounded-lg overflow-hidden border border-gray-200">
-                                    <img src={urlAntorchas} alt="Antorchas" className="w-full h-full object-cover grayscale" />
-                                </div>
-                                <span className="font-bold text-sm text-gray-600 block">Antorcha 1</span>
-                            </button>
-
-                            {/* Antorcha 2 (Desactivado) */}
-                            <button disabled className="bg-white p-3 rounded-xl border-2 border-gray-200 opacity-70 text-left relative shadow-sm">
-                                <div className="h-20 w-full mb-2 rounded-lg overflow-hidden border border-gray-200">
-                                    <img src={urlAntorchas} alt="Antorchas" className="w-full h-full object-cover grayscale" />
-                                </div>
-                                <span className="font-bold text-sm text-gray-600 block">Antorcha 2</span>
-                            </button>
+                            <button disabled className="bg-white p-2 rounded-3xl border-2 border-gray-100 opacity-60 text-left relative overflow-hidden"><div className="h-28 w-full rounded-2xl overflow-hidden mb-2"><img src={urlDigestor} className="w-full h-full object-cover grayscale" /></div><span className="font-black text-xs px-2 text-gray-500 uppercase">Digestor</span></button>
+                            <button onClick={irAGasometro} className={`p-2 rounded-3xl border-2 transition-all text-left relative overflow-hidden shadow-lg ${areasDone.gasometro ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-blue-400 hover:scale-105'}`}>{areasDone.gasometro && <div className="absolute top-4 right-4 z-10 bg-emerald-500 text-white rounded-full h-8 w-8 flex items-center justify-center shadow-xl border-2 border-white font-black">✓</div>}<div className="h-28 w-full rounded-2xl overflow-hidden mb-2 shadow-inner"><img src={urlGasometro} className="w-full h-full object-cover" /></div><span className={`font-black text-xs px-2 uppercase ${areasDone.gasometro ? 'text-emerald-800' : 'text-blue-900'}`}>Gasómetro</span></button>
+                            <button disabled className="bg-white p-2 rounded-3xl border-2 border-gray-100 opacity-60 text-left relative overflow-hidden"><div className="h-28 w-full rounded-2xl overflow-hidden mb-2"><img src={urlCompresores} className="w-full h-full object-cover grayscale" /></div><span className="font-black text-xs px-2 text-gray-500 uppercase">Compresores</span></button>
+                            <button disabled className="bg-white p-2 rounded-3xl border-2 border-gray-100 opacity-60 text-left relative overflow-hidden"><div className="h-28 w-full rounded-2xl overflow-hidden mb-2"><img src={urlCalderas} className="w-full h-full object-cover grayscale" /></div><span className="font-black text-xs px-2 text-gray-500 uppercase">Calderas</span></button>
+                            <button disabled className="bg-white p-2 rounded-3xl border-2 border-gray-100 opacity-60 text-left relative overflow-hidden col-span-2"><div className="h-28 w-full rounded-2xl overflow-hidden mb-2"><img src={urlAntorchas} className="w-full h-full object-cover grayscale" /></div><span className="font-black text-xs px-2 text-gray-500 uppercase">Antorchas 1 y 2</span></button>
                         </div>
                     </div>
-                    
-                    <div className="pt-8 pb-10 border-t border-gray-300">
-                        <button onClick={finalizarTurno} disabled={loadingDb} className="w-full bg-zinc-800 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">
-                            {loadingDb ? 'Guardando en Servidor...' : 'CERRAR Y FINALIZAR TURNO'}
-                        </button>
+                    <div className="pt-10 pb-10 border-t border-gray-200">
+                        <button onClick={finalizarTurno} disabled={loadingDb} className="w-full bg-zinc-900 text-white font-black py-5 rounded-3xl shadow-2xl uppercase tracking-widest transition-all transform active:scale-95">{loadingDb ? 'Guardando...' : 'Finalizar Turno'}</button>
                     </div>
                 </div>
             );
         }
 
         // ==========================================
-        // FORMULARIO GASÓMETRO (CON FALLBACKS SEGUROS)
+        // FORMULARIO GASÓMETRO (MULTI-FOTO + NOMBRE PC1 ACTUALIZADO)
         // ==========================================
         function FormularioGasometro({ turnoId, prevData, listaFallas, listaEstadosSopladores, onTerminado }) {
             const [fd, setFd] = useState({ 
@@ -460,10 +300,10 @@
                 agua_trampa: true, valvula_corte: 'Abierta (Candado puesto)', observaciones: '' 
             });
             const [fotos, setFotos] = useState({ 
-                anclaje: null, altura: null, presion: null, lel: null, guarda: null, sopladores: null, trampa: null 
+                anclaje: [], altura: [], presion: [], lel: [], guarda: [], sopladores: [], trampa: [] 
             });
 
-            const manejarFoto = (campo, url) => setFotos(prev => ({ ...prev, [campo]: url }));
+            const manejarFotos = (campo, urls) => setFotos(prev => ({ ...prev, [campo]: urls }));
 
             const p = parseFloat(fd.presion); 
             const h = parseFloat(fd.altura); 
@@ -473,57 +313,29 @@
             const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' || !fd.agua_trampa || fd.valvula_corte === 'Sin candado de seguridad';
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
             
-            const fotosCompletas = fotos.anclaje && fotos.altura && fotos.presion && fotos.lel && fotos.guarda && fotos.sopladores && fotos.trampa;
+            // Regla: Se requiere al menos 1 foto por cada uno de los 7 puntos
+            const fotosCompletas = Object.values(fotos).every(arr => arr && arr.length > 0);
             const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
-            
             const canSubmit = fotosCompletas && datosCompletos && !isCritical && !observationMissing;
 
-            const fallbackFallas = [
-                { id: 'f1', grupo: 'Fugas', descripcion: 'Fuga de biogas por perno de anclaje' },
-                { id: 'f2', grupo: 'Fugas', descripcion: 'Fuga de biogas por linea de brida/flange' },
-                { id: 'f3', grupo: 'Fugas', descripcion: 'Fuga de aire entre membranas (base exterior)' },
-                { id: 'm1', grupo: 'Mecanicos', descripcion: 'Rodon de membrana montado o mordido' },
-                { id: 'm2', grupo: 'Mecanicos', descripcion: 'Doblez o pliegue anormal en membrana' },
-                { id: 'm3', grupo: 'Mecanicos', descripcion: 'Pernos sueltos, cortados o faltantes' },
-                { id: 'm4', grupo: 'Mecanicos', descripcion: 'Corrosion severa en pernos o flanges' },
-                { id: 'm5', grupo: 'Mecanicos', descripcion: 'Acumulacion de agua/suciedad en perfil base' },
-                { id: 'o1', grupo: 'Otros', descripcion: 'Otra anomalia (Detallar en observaciones)' }
-            ];
-
-            const fallbackEstados = [
-                { id: 'e1', descripcion: 'Operación Normal (Sin ruidos/vibración)' },
-                { id: 'e2', descripcion: 'Vibración leve detectada' },
-                { id: 'e3', descripcion: 'Ruido anormal en rodamientos' },
-                { id: 'e4', descripcion: 'Filtro de aire requiere limpieza/cambio' },
-                { id: 'e5', descripcion: 'Fuga de aire en conexión flexible' },
-                { id: 'e6', descripcion: 'Falla total / Motor bloqueado' }
-            ];
-
-            let fallasAUsar = fallbackFallas;
-            if (Array.isArray(listaFallas) && listaFallas.length > 0) fallasAUsar = listaFallas;
-
-            let estadosAUsar = fallbackEstados;
-            if (Array.isArray(listaEstadosSopladores) && listaEstadosSopladores.length > 0) estadosAUsar = listaEstadosSopladores;
-
-            const fallasAgrupadas = fallasAUsar.reduce((acc, falla) => {
+            const fallasAgrupadas = (listaFallas || []).reduce((acc, falla) => {
                 if (!acc[falla.grupo]) acc[falla.grupo] = [];
                 acc[falla.grupo].push(falla);
                 return acc;
             }, {});
 
             return (
-                <div className="p-4 max-w-md mx-auto space-y-5 min-h-screen pb-10 bg-gray-50 font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg flex items-center mb-4 sticky top-0 z-10">
+                <div className="p-4 max-w-md mx-auto space-y-6 min-h-screen pb-10 bg-gray-100 font-sans">
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl flex items-center sticky top-0 z-20">
                         <span className="text-2xl mr-3">🏗️</span>
-                        <h2 className="text-lg font-bold text-center">Ronda Gasometro</h2>
+                        <h2 className="text-lg font-black uppercase tracking-tight">Ronda Gasometro</h2>
                     </div>
                     
-                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
-                        <div className="flex justify-between items-center border-b pb-2 mb-3">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-1: Anclaje Base</h3>
-                        </div>
-                        <select onChange={e=>setFd({...fd, anclajes:e.target.value})} className={`w-full border p-3 rounded font-bold text-sm ${fd.anclajes !== 'Optimo' ? 'bg-yellow-50 text-yellow-800 border-yellow-300' : 'bg-gray-50'}`}>
-                            <option value="Optimo">✓ Estado Optimo</option>
+                    {/* PC 1: Membranas y Anclaje Base */}
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-1: Membranas y Anclaje Base</h3>
+                        <select onChange={e=>setFd({...fd, anclajes:e.target.value})} className={`w-full border-2 p-3 rounded-xl font-bold text-sm mb-2 transition-colors ${fd.anclajes !== 'Optimo' ? 'bg-yellow-50 border-yellow-300 text-yellow-800' : 'bg-gray-50 border-gray-100'}`}>
+                            <option value="Optimo">✓ Estado Óptimo</option>
                             {Object.keys(fallasAgrupadas).map(grupo => (
                                 <optgroup key={grupo} label={`⚠️ Falla: ${grupo}`}>
                                     {fallasAgrupadas[grupo].map(falla => (
@@ -532,125 +344,69 @@
                                 </optgroup>
                             ))}
                         </select>
-                        <FotoUploader idCampo="anclaje" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto de Base/Anclajes" />
+                        <MultiFotoUploader idCampo="anclaje" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Base, Pernos y Lonas" />
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
-                        <div className="flex justify-between items-center border-b pb-2 mb-4">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-2: Lecturas Medidores Gasómetro</h3>
+                    {/* PC 2: Lecturas Medidores Gasómetro */}
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md space-y-8">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-2">PC-2: Lecturas Medidores Gasómetro</h3>
+                        
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                            <div className="flex justify-between items-center mb-2"><label className="text-[10px] text-gray-600 font-black uppercase">Altura Membrana Interna (m)</label><Fantasma valor={prevData?.altura_interna_m} /></div>
+                            <input type="number" step="0.01" onChange={e=>setFd({...fd, altura:e.target.value})} className="w-full border-2 border-white shadow-sm p-4 rounded-xl text-center font-black text-xl mb-2"/>
+                            <MultiFotoUploader idCampo="altura" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Cinta Métrica / Lona Interna" />
                         </div>
                         
-                        <div className="mb-6 bg-gray-50 p-3 rounded-lg border shadow-inner">
-                            <div className="flex justify-between items-center mb-1">
-                                <label className="text-xs text-gray-700 font-bold uppercase">Altura Membrana Interna (m)</label>
-                                <Fantasma valor={prevData?.altura_interna_m} />
-                            </div>
-                            <input type="number" step="0.01" onChange={e=>setFd({...fd, altura:e.target.value})} className="w-full border p-3 rounded text-center font-bold text-xl mb-1 bg-white"/>
-                            <FotoUploader idCampo="altura" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Cinta Metrica" />
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                            <div className="flex justify-between items-center mb-2"><label className="text-[10px] text-gray-600 font-black uppercase">Presión Intermembranas mbar</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div>
+                            <input type="number" step="0.1" onChange={e=>setFd({...fd, presion:e.target.value})} className="w-full border-2 border-white shadow-sm p-4 rounded-xl text-center font-black text-xl mb-2"/>
+                            <MultiFotoUploader idCampo="presion" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Manómetro en U" />
                         </div>
                         
-                        <div className="mb-6 bg-gray-50 p-3 rounded-lg border shadow-inner">
-                            <div className="flex justify-between items-center mb-1">
-                                <label className="text-xs text-gray-700 font-bold uppercase">Presión Intermembranas mbar</label>
-                                <Fantasma valor={prevData?.presion_inter_membrana_mbar} />
-                            </div>
-                            <input type="number" step="0.1" onChange={e=>setFd({...fd, presion:e.target.value})} className="w-full border p-3 rounded text-center font-bold text-xl mb-1 bg-white"/>
-                            <FotoUploader idCampo="presion" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Manometro en U" />
-                        </div>
-                        
-                        <div className={`p-3 rounded-lg border-2 ${lel > 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-200'}`}>
-                            <div className="flex justify-between items-center mb-1">
-                                <label className="text-xs font-bold uppercase text-gray-700">Lectura LEL Maxima (%)</label>
-                                <Fantasma valor={prevData?.lectura_lel_porcentaje} />
-                            </div>
-                            <input type="number" step="0.1" onChange={e=>setFd({...fd, lel:e.target.value})} className={`w-full border p-3 rounded text-center font-bold text-xl mb-1 ${lel > 0 ? 'bg-red-100 text-red-700' : 'bg-white'}`}/>
-                            <FotoUploader idCampo="lel" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Pantalla LEL" />
+                        <div className={`p-4 rounded-2xl border-2 transition-all ${lel > 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-100'}`}>
+                            <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${lel > 0 ? 'text-red-700' : 'text-gray-600'}`}>Lectura LEL Máxima (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
+                            <input type="number" step="0.1" onChange={e=>setFd({...fd, lel:e.target.value})} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-2 ${lel > 0 ? 'bg-red-100 border-red-400 text-red-700' : 'border-white bg-white shadow-sm'}`}/>
+                            <MultiFotoUploader idCampo="lel" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Pantalla Detector LEL" />
                         </div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
-                        <div className="flex justify-between items-center border-b pb-2 mb-3">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-3: Guarda Hidráulica</h3>
-                        </div>
-                        <div className="flex justify-between items-center mb-1">
-                            <label className="text-xs text-gray-500 font-bold">Nivel en Visor</label>
-                            <Fantasma valor={prevData?.nivel_guarda_hidraulica} />
-                        </div>
-                        <select onChange={e=>setFd({...fd, guarda:e.target.value})} className={`w-full border p-3 rounded font-bold text-sm ${fd.guarda !== 'Nivel Normal' ? 'bg-red-100 text-red-800' : 'bg-gray-50'}`}>
-                            <option>Nivel Normal</option>
-                            <option>Bajo (Perdida de sello)</option>
-                            <option>Rebalse</option>
+                    {/* PC 3: Guarda Hidráulica */}
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-3: Guarda Hidráulica</h3>
+                        <div className="flex justify-between items-center mb-2"><label className="text-xs text-gray-500 font-bold uppercase">Nivel en Visor</label><Fantasma valor={prevData?.nivel_guarda_hidraulica} /></div>
+                        <select onChange={e=>setFd({...fd, guarda:e.target.value})} className={`w-full border-2 p-4 rounded-xl font-bold text-sm mb-2 transition-colors ${fd.guarda !== 'Nivel Normal' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-100'}`}>
+                            <option>Nivel Normal</option><option>Bajo (Perdida de sello)</option><option>Rebalse</option>
                         </select>
-                        <FotoUploader idCampo="guarda" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Visor Nivel" />
+                        <MultiFotoUploader idCampo="guarda" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Visor de Nivel" />
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
-                        <div className="flex justify-between items-center border-b pb-2 mb-3">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-4: Inyeccion de Aire</h3>
+                    {/* PC 4: Inyeccion de Aire */}
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest border-b pb-2">PC-4: Inyeccion de Aire</h3>
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 1</label><select onChange={e=>setFd({...fd, soplador_1: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
+                            <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 2</label><select onChange={e=>setFd({...fd, soplador_2: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-2 mb-3">
-                            <div>
-                                <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Soplador 1</label>
-                                <select onChange={e=>setFd({...fd, soplador_1: e.target.value})} className="w-full border p-2 rounded text-xs font-bold bg-gray-50">
-                                    <option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Soplador 2</label>
-                                <select onChange={e=>setFd({...fd, soplador_2: e.target.value})} className="w-full border p-2 rounded text-xs font-bold bg-gray-50">
-                                    <option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Condición Mecánica del Sistema</label>
-                            <select onChange={e=>setFd({...fd, condicion_sopladores: e.target.value})} className={`w-full border p-3 rounded text-xs font-bold ${fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' ? 'bg-red-50 text-red-800 border-red-300' : 'bg-gray-50'}`}>
-                                {estadosAUsar.map(estado => (
-                                    <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <FotoUploader idCampo="sopladores" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Sopladores/Damper" />
+                        <div className="mb-4"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Condición Mecánica</label><select onChange={e=>setFd({...fd, condicion_sopladores: e.target.value})} className={`w-full border-2 p-4 rounded-xl text-xs font-black transition-colors ${fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-50'}`}>{(listaEstadosSopladores || []).map(estado => <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>)}</select></div>
+                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores / Damper" />
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
-                        <div className="flex justify-between items-center border-b pb-2 mb-3">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-5: Linea de Biogas</h3>
-                        </div>
-                        
-                        <div className="mb-3">
-                            <label className={`flex items-center space-x-3 p-3 rounded border cursor-pointer transition ${fd.agua_trampa ? 'bg-gray-50 border-gray-200' : 'bg-red-50 border-red-300'}`}>
-                                <input type="checkbox" defaultChecked onChange={e=>setFd({...fd, agua_trampa: e.target.checked})} className="h-6 w-6 text-blue-600 rounded" />
-                                <span className={`text-sm font-bold ${fd.agua_trampa ? 'text-gray-700' : 'text-red-700'}`}>Flujo de agua constante OK</span>
-                            </label>
-                        </div>
-                        
-                        <div className="mb-2">
-                            <label className="text-xs text-gray-500 font-bold mb-1 block">Valvula de Corte</label>
-                            <select onChange={e=>setFd({...fd, valvula_corte:e.target.value})} className={`w-full border p-3 rounded font-bold text-sm ${fd.valvula_corte === 'Sin candado de seguridad' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-gray-50'}`}>
-                                <option>Abierta (Candado puesto)</option>
-                                <option>Cerrada (Candado puesto)</option>
-                                <option>Sin candado de seguridad</option>
-                            </select>
-                        </div>
-                        
-                        <FotoUploader idCampo="trampa" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Trampa y Valvula" />
+                    {/* PC 5: Linea de Biogas */}
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-5: Linea de Biogas</h3>
+                        <label className={`flex items-center space-x-3 p-4 rounded-2xl border-2 mb-4 transition-all ${fd.agua_trampa ? 'bg-gray-50 border-gray-100' : 'bg-red-50 border-red-300 shadow-inner'}`}><input type="checkbox" defaultChecked onChange={e=>setFd({...fd, agua_trampa: e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg" /><span className={`text-xs font-black uppercase ${fd.agua_trampa ? 'text-gray-700' : 'text-red-700'}`}>Agua constante OK</span></label>
+                        <div className="mb-2"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Valvula de Corte</label><select onChange={e=>setFd({...fd, valvula_corte:e.target.value})} className={`w-full border-2 p-4 rounded-xl font-black text-xs ${fd.valvula_corte === 'Sin candado de seguridad' ? 'bg-red-100 border-red-400 text-red-800' : 'bg-gray-50 border-gray-50'}`}><option>Abierta (Candado puesto)</option><option>Cerrada (Candado puesto)</option><option>Sin candado de seguridad</option></select></div>
+                        <MultiFotoUploader idCampo="trampa" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Trampa de Condensados" />
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border shadow-sm">
-                         <label className="text-xs text-gray-500 font-bold">Observaciones Generales</label>
-                         {observationMissing && <p className="text-xs text-red-600 font-bold my-1 p-1 bg-red-50 rounded">⚠️ Se requiere observacion obligatoria detallando la anomalia.</p>}
-                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border p-2 rounded mt-1 text-sm ${observationMissing ? 'bg-red-50 border-red-300' : 'bg-gray-50'}`} rows="3"></textarea>
+                    <div className="bg-white p-5 rounded-3xl shadow-md border border-gray-100">
+                         <label className="text-[10px] text-gray-500 font-black uppercase mb-2 block tracking-widest">Observaciones Generales</label>
+                         {observationMissing && <p className="text-[10px] text-red-600 font-black mb-2 animate-pulse uppercase">⚠️ Registro de observación obligatorio</p>}
+                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border-2 p-4 rounded-2xl text-sm font-medium transition-all ${observationMissing ? 'bg-red-50 border-red-300 shadow-inner' : 'bg-gray-50 border-gray-50'}`} rows="4" placeholder="Detalle anomalías registradas..."></textarea>
                     </div>
 
-                    {!fotosCompletas && <p className="text-center text-[10px] text-red-600 font-bold px-4 pt-2 uppercase tracking-tighter">Debe capturar y subir las 7 fotografias obligatorias.</p>}
-                    
-                    <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-5 rounded-xl shadow-xl mt-4 uppercase tracking-widest transition-all ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.01]' : 'bg-gray-400 cursor-not-allowed'}`}>
-                        FINALIZAR REGISTRO
-                    </button>
+                    {!fotosCompletas && <p className="text-center text-[10px] text-red-600 font-black uppercase tracking-tighter pt-4 animate-bounce">Mínimo 1 fotografía por cada PC para finalizar</p>}
+                    <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-6 rounded-3xl shadow-2xl mt-6 uppercase tracking-[0.2em] transition-all transform active:scale-95 ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}>Finalizar Gasómetro</button>
                 </div>
             );
         }
@@ -664,13 +420,10 @@
             const [pantallaActiva, setPantallaActiva] = useState('hub');
             const [turnoContexto, setTurnoContexto] = useState({ shift: '', scada: null, turnoIdBd: null });
             const [areasStatus, setAreasStatus] = useState({ gasometro: false });
-            
             const [datosGasometroTemp, setDatosGasometroTemp] = useState(null);
             const [fotosGasometroTemp, setFotosGasometroTemp] = useState(null);
-            
             const [isSavingDb, setIsSavingDb] = useState(false);
             const [valoresAnteriores, setValoresAnteriores] = useState({ turno: null, gasometro: null });
-            
             const [listaFallas, setListaFallas] = useState([]);
             const [listaEstadosSopladores, setListaEstadosSopladores] = useState([]);
 
@@ -678,13 +431,8 @@
                 try {
                     const { data: turnos } = await supabaseClient.from('registro_turnos').select('*').order('created_at', { ascending: false }).limit(1);
                     const { data: gasometros } = await supabaseClient.from('inspeccion_gasometro').select('*').order('created_at', { ascending: false }).limit(1);
-                    setValoresAnteriores({
-                        turno: turnos?.[0] || null,
-                        gasometro: gasometros?.[0] || null
-                    });
-                } catch (error) {
-                    console.log("Modo Offline");
-                }
+                    setValoresAnteriores({ turno: turnos?.[0] || null, gasometro: gasometros?.[0] || null });
+                } catch (error) { console.log("Offline"); }
             };
 
             const cargarCatalogos = async () => {
@@ -693,29 +441,19 @@
                     const { data: s } = await supabaseClient.from('catalogo_estados_sopladores').select('*');
                     if (f) setListaFallas(f);
                     if (s) setListaEstadosSopladores(s);
-                } catch (error) {
-                    console.log("Modo Offline");
-                }
+                } catch (error) { console.log("Offline"); }
             };
 
             useEffect(() => {
                 supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     setUser(session?.user ?? null);
-                    if(session?.user) { 
-                        cargarMemoriaOperativa(); 
-                        cargarCatalogos(); 
-                    }
+                    if(session?.user) { cargarMemoriaOperativa(); cargarCatalogos(); }
                     setAuthChecking(false);
                 });
-
                 const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
                     setUser(session?.user ?? null);
-                    if(session?.user) { 
-                        cargarMemoriaOperativa(); 
-                        cargarCatalogos(); 
-                    }
+                    if(session?.user) { cargarMemoriaOperativa(); cargarCatalogos(); }
                 });
-
                 return () => subscription.unsubscribe();
             }, []);
 
@@ -731,53 +469,29 @@
                 setIsSavingDb(true);
                 try {
                     const { data: turnoData, error: errT } = await supabaseClient.from('registro_turnos').insert([{
-                        operador_nombre: user.email, 
-                        tipo_turno: turnoContexto.shift,
-                        scada_nivel_gasometro: turnoContexto.scada.gas_nivel || null, 
-                        scada_presion_mbar: turnoContexto.scada.gas_presion || null,
-                        scada_flujo_biogas_nm3h: turnoContexto.scada.comp_flujo || null, 
-                        scada_dig_nivel_cm: turnoContexto.scada.dig_nivel || null,
-                        scada_dig_presion_mbar: turnoContexto.scada.dig_presion || null, 
-                        scada_dig_temp_c: turnoContexto.scada.dig_temp || null,
-                        scada_comp_presion_imp_mbar: turnoContexto.scada.comp_pres_imp || null, 
-                        scada_cald_flujo_m3h: turnoContexto.scada.cald_flujo || null,
-                        scada_ant_flujo_m3h: turnoContexto.scada.ant_flujo || null, 
-                        atex_confirmado: true, 
-                        estado_ronda: 'Completada', 
-                        hora_fin: new Date()
+                        operador_nombre: user.email, tipo_turno: turnoContexto.shift,
+                        scada_nivel_gasometro: turnoContexto.scada.gas_nivel || null, scada_presion_mbar: turnoContexto.scada.gas_presion || null,
+                        atex_confirmado: true, estado_ronda: 'Completada', hora_fin: new Date()
                     }]).select();
 
                     if (!errT && areasStatus.gasometro) {
                         await supabaseClient.from('inspeccion_gasometro').insert([{
-                            turno_id: turnoData[0].id, 
-                            estado_anclajes: datosGasometroTemp.anclajes,
-                            altura_interna_m: datosGasometroTemp.altura || null, 
-                            presion_inter_membrana_mbar: datosGasometroTemp.presion || null, 
-                            lectura_lel_porcentaje: datosGasometroTemp.lel || null, 
-                            nivel_guarda_hidraulica: datosGasometroTemp.guarda,
-                            soplador_1_estado: datosGasometroTemp.soplador_1, 
-                            soplador_2_estado: datosGasometroTemp.soplador_2, 
+                            turno_id: turnoData[0].id, estado_anclajes: datosGasometroTemp.anclajes,
+                            altura_interna_m: datosGasometroTemp.altura || null, presion_inter_membrana_mbar: datosGasometroTemp.presion || null, 
+                            lectura_lel_porcentaje: datosGasometroTemp.lel || null, nivel_guarda_hidraulica: datosGasometroTemp.guarda,
+                            soplador_1_estado: datosGasometroTemp.soplador_1, soplador_2_estado: datosGasometroTemp.soplador_2, 
                             sopladores_condicion_mecanica: datosGasometroTemp.condicion_sopladores, 
-                            flujo_agua_trampa: datosGasometroTemp.agua_trampa, 
-                            estado_valvula_corte: datosGasometroTemp.valvula_corte,
+                            flujo_agua_trampa: datosGasometroTemp.agua_trampa, estado_valvula_corte: datosGasometroTemp.valvula_corte,
                             observaciones: datosGasometroTemp.observaciones,
-                            foto_anclaje: fotosGasometroTemp.anclaje, 
-                            foto_altura: fotosGasometroTemp.altura,
-                            foto_presion: fotosGasometroTemp.presion, 
-                            foto_lel: fotosGasometroTemp.lel,
-                            foto_guarda: fotosGasometroTemp.guarda, 
-                            foto_sopladores: fotosGasometroTemp.sopladores,
+                            foto_anclaje: fotosGasometroTemp.anclaje, foto_altura: fotosGasometroTemp.altura,
+                            foto_presion: fotosGasometroTemp.presion, foto_lel: fotosGasometroTemp.lel,
+                            foto_guarda: fotosGasometroTemp.guarda, foto_sopladores: fotosGasometroTemp.sopladores,
                             foto_trampa: fotosGasometroTemp.trampa
                         }]);
                     }
-                    
                     setIsSavingDb(false);
                     setPantallaActiva('fin');
-                    
-                } catch (error) {
-                    alert("Error en la conexión a la base de datos central: " + error.message);
-                    setIsSavingDb(false);
-                }
+                } catch (error) { alert("Error: " + error.message); setIsSavingDb(false); }
             };
 
             return (
@@ -786,12 +500,12 @@
                     {pantallaActiva === 'instalaciones' && <MenuInstalaciones areasDone={areasStatus} irAGasometro={() => setPantallaActiva('form_gasometro')} finalizarTurno={manejarFinalizacionTotal} loadingDb={isSavingDb} />}
                     {pantallaActiva === 'form_gasometro' && <FormularioGasometro turnoId={turnoContexto.turnoIdBd} prevData={valoresAnteriores.gasometro} listaFallas={listaFallas} listaEstadosSopladores={listaEstadosSopladores} onTerminado={(d, f) => { setDatosGasometroTemp(d); setFotosGasometroTemp(f); setAreasStatus({...areasStatus, gasometro: true}); setPantallaActiva('instalaciones'); }} />}
                     {pantallaActiva === 'fin' && (
-                        <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#1e1e1e] text-center">
-                            <div className="bg-[#2a2a2a] p-8 rounded-2xl border border-zinc-700">
-                                <div className="text-6xl mb-6">✅</div>
-                                <h2 className="text-2xl font-bold text-white">Ronda Finalizada</h2>
-                                <p className="text-zinc-400 mt-2 mb-8">Datos y 7 fotos guardados con éxito.</p>
-                                <button onClick={() => window.location.reload()} className="w-full bg-amber-500 text-zinc-900 font-bold py-4 rounded-xl hover:bg-amber-600 transition-colors">Nuevo Turno</button>
+                        <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#1e1e1e] text-center text-white">
+                            <div className="bg-[#2a2a2a] p-10 rounded-[3rem] border border-zinc-700 shadow-2xl">
+                                <div className="text-7xl mb-8">✅</div>
+                                <h2 className="text-3xl font-black mb-4 tracking-tighter">Ronda Completada</h2>
+                                <p className="text-zinc-400 mb-10 font-medium">Trazabilidad y evidencia fotográfica aseguradas en el servidor central.</p>
+                                <button onClick={() => window.location.reload()} className="w-full bg-amber-500 text-zinc-900 font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl transform active:scale-95 transition-all">Nuevo Turno</button>
                             </div>
                         </div>
                     )}
