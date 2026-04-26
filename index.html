@@ -197,7 +197,7 @@
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
                     <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Protocolos de Seguridad</h2></div>
-                    <div className="bg-white rounded-xl shadow-sm border p-4"><h3 className="text-sm font-bold text-gray-800 uppercase mb-3 border-b pb-2">Uso de EPP</h3><div className="space-y-2"><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Casco, Lentes y Zapatos</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Detector de Gases (LEL/H2S) ON</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Radio intrinsecamente segura</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Sin celulares estandar</span></label></div></div>
+                    <div className="bg-white rounded-xl shadow-sm border p-4"><h3 className="text-sm font-bold text-gray-800 uppercase mb-3 border-b pb-2">Uso de EPP</h3><div className="space-y-2"><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Casco, Lentes y Zapatos</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Detector de Gases (LEL/H2S) ON</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Radio intrinsecamente segura</span></label><label className="flex items-center space-x-3 p-2 bg-gray-50 rounded border"><input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-5 w-5"/> <span className="text-sm">Sin telefonos celulares estandar</span></label></div></div>
                     <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 p-4"><h3 className="text-sm font-bold text-red-800 uppercase mb-3 border-b border-red-200 pb-2">Riesgo ATEX</h3><div className="space-y-2"><label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax1:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z1: 1.5m de Guarda Hidraulica</span></label><label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax2:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z1: 1.0m de Valvulas y Purgas</span></label><label className="flex items-center space-x-3 p-2 bg-white rounded border border-red-100"><input type="checkbox" onChange={e=>setC({...c, ax3:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-xs">Z2: 0.35m de Bridas/Inst.</span></label></div></div>
                     <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-bold py-4 rounded-xl shadow-lg mt-8 ${listo ? 'bg-emerald-600' : 'bg-gray-400'}`}>CONFIRMAR Y VOLVER</button>
                 </div>
@@ -265,30 +265,39 @@
                         </div>
                     </div>
                     <div className="pt-10 pb-10 border-t border-gray-300">
-                        <button onClick={finalizarTurno} disabled={loadingDb} className="w-full bg-zinc-800 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">{loadingDb ? 'Guardando...' : 'CERRAR Y FINALIZAR TURNO'}</button>
+                        <button onClick={finalizarTurno} disabled={loadingDb} className="w-full bg-zinc-800 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">{loadingDb ? 'Guardando en Servidor...' : 'CERRAR Y FINALIZAR TURNO'}</button>
                     </div>
                 </div>
             );
         }
 
         // ==========================================
-        // FORMULARIO GASÓMETRO (CON OFFLINE FALLBACK)
+        // FORMULARIO GASÓMETRO (ACTUALIZADO A 7 FOTOS)
         // ==========================================
         function FormularioGasometro({ turnoId, prevData, listaFallas, onTerminado }) {
-            const [fd, setFd] = useState({ anclajes:'Optimo', altura:'', presion:'', lel:'', guarda:'Nivel Normal', sopladores_ok: true, observaciones:'' });
-            const [fotos, setFotos] = useState({ anclaje: null, altura: null, presion: null, lel: null, guarda: null, sopladores: null });
+            const [fd, setFd] = useState({ 
+                anclajes:'Optimo', altura:'', presion:'', lel:'', guarda:'Nivel Normal', 
+                sopladores_ok: true, agua_trampa: true, valvula_corte: 'Abierta (Candado puesto)', observaciones:'' 
+            });
+            const [fotos, setFotos] = useState({ 
+                anclaje: null, altura: null, presion: null, lel: null, guarda: null, sopladores: null, trampa: null 
+            });
 
             const manejarFoto = (campo, url) => setFotos(prev => ({ ...prev, [campo]: url }));
 
             const p = parseFloat(fd.presion); const h = parseFloat(fd.altura); const lel = parseFloat(fd.lel);
             const isCritical = p >= 25 || h > 10.1;
-            const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || !fd.sopladores_ok;
+            
+            // Lógica de alerta por faltas mecánicas, LEL o falta de candado/agua
+            const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || !fd.sopladores_ok || !fd.agua_trampa || fd.valvula_corte === 'Sin candado de seguridad';
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
-            const fotosCompletas = fotos.anclaje && fotos.altura && fotos.presion && fotos.lel && fotos.guarda && fotos.sopladores;
+            
+            // Regla estricta: Las 7 fotos deben estar SUBIDAS
+            const fotosCompletas = fotos.anclaje && fotos.altura && fotos.presion && fotos.lel && fotos.guarda && fotos.sopladores && fotos.trampa;
             const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
+            
             const canSubmit = fotosCompletas && datosCompletos && !isCritical && !observationMissing;
 
-            // PLAN B: Si la BD falló y listaFallas está vacía, usamos esta lista interna de emergencia
             const fallbackFallas = [
                 { id: 'f1', grupo: 'Fugas', descripcion: 'Fuga de biogas por perno de anclaje' },
                 { id: 'f2', grupo: 'Fugas', descripcion: 'Fuga de biogas por linea de brida/flange' },
@@ -300,9 +309,7 @@
                 { id: 'm5', grupo: 'Mecanicos', descripcion: 'Acumulacion de agua/suciedad en perfil base' },
                 { id: 'o1', grupo: 'Otros', descripcion: 'Otra anomalia (Detallar en observaciones)' }
             ];
-
             const fallasAUsar = (listaFallas && listaFallas.length > 0) ? listaFallas : fallbackFallas;
-
             const fallasAgrupadas = fallasAUsar.reduce((acc, falla) => {
                 if (!acc[falla.grupo]) acc[falla.grupo] = [];
                 acc[falla.grupo].push(falla);
@@ -372,14 +379,40 @@
                         <FotoUploader idCampo="sopladores" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Sopladores" />
                     </div>
 
+                    {/* PC 5: NUEVO - TRAMPA DE CONDENSADOS Y VÁLVULA */}
+                    <div className="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm">
+                        <div className="flex justify-between items-center border-b pb-2 mb-3">
+                            <h3 className="text-sm font-bold text-gray-800 uppercase">PC-5: Linea de Biogas</h3>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">Verifique suministro de agua a la trampa y estado LOTO de la valvula de corte.</p>
+                        
+                        <div className="mb-3">
+                            <label className={`flex items-center space-x-3 p-3 rounded border cursor-pointer shadow-inner transition ${fd.agua_trampa ? 'bg-gray-50 border-gray-200' : 'bg-red-50 border-red-300'}`}>
+                                <input type="checkbox" defaultChecked onChange={e=>setFd({...fd, agua_trampa: e.target.checked})} className="h-6 w-6 text-blue-600 rounded" />
+                                <span className={`text-sm font-bold ${fd.agua_trampa ? 'text-gray-700' : 'text-red-700'}`}>Flujo de agua constante (Sello hidraulico OK)</span>
+                            </label>
+                        </div>
+
+                        <div className="mb-2">
+                            <label className="text-xs text-gray-500 font-bold mb-1 block">Valvula de Corte / Ingreso</label>
+                            <select onChange={e=>setFd({...fd, valvula_corte:e.target.value})} className={`w-full border p-3 rounded font-bold text-sm ${fd.valvula_corte === 'Sin candado de seguridad' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-gray-50'}`}>
+                                <option>Abierta (Candado puesto)</option>
+                                <option>Cerrada (Candado puesto)</option>
+                                <option>Sin candado de seguridad</option>
+                            </select>
+                        </div>
+
+                        <FotoUploader idCampo="trampa" turnoId={turnoId} onFotoSubida={manejarFoto} titulo="Foto Trampa y Valvula" />
+                    </div>
+
                     {/* CIERRE */}
                     <div className="bg-white p-4 rounded-xl border shadow-sm">
                          <label className="text-xs text-gray-500 font-bold">Observaciones Generales</label>
                          {observationMissing && <p className="text-xs text-red-600 font-bold my-1 p-1 bg-red-50 rounded">⚠️ Se requiere observacion obligatoria detallando la anomalia reportada.</p>}
-                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border p-2 rounded mt-1 text-sm ${observationMissing ? 'bg-red-50 border-red-300' : 'bg-gray-50'}`} rows="3" placeholder="Justifique alertas LEL o anomalias..."></textarea>
+                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border p-2 rounded mt-1 text-sm ${observationMissing ? 'bg-red-50 border-red-300' : 'bg-gray-50'}`} rows="3" placeholder="Justifique alertas LEL, candados faltantes o pérdida de sellos..."></textarea>
                     </div>
 
-                    {!fotosCompletas && <p className="text-center text-xs text-red-600 font-bold px-4 pt-2">Debe CAPTURAR y SUBIR las 6 fotografias para guardar.</p>}
+                    {!fotosCompletas && <p className="text-center text-xs text-red-600 font-bold px-4 pt-2">Debe CAPTURAR y SUBIR las 7 fotografias para guardar.</p>}
                     
                     <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-5 rounded-xl shadow-xl mt-4 uppercase tracking-widest transition-all ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.01]' : 'bg-gray-400 cursor-not-allowed'}`}>FINALIZAR GASOMETRO</button>
                 </div>
@@ -436,7 +469,7 @@
 
             const manejarArranqueRonda = async (shiftDetectado, scadaData) => {
                 setIsSavingDb(true);
-                const tempId = 'Turno-' + Date.now(); 
+                const tempId = 'TempId-' + Date.now(); 
                 setTurnoContexto({ shift: shiftDetectado, scada: scadaData, turnoIdBd: tempId });
                 setIsSavingDb(false);
                 setPantallaActiva('instalaciones');
@@ -472,13 +505,16 @@
                         lectura_lel_porcentaje: datosGasometroTemp.lel || null,
                         nivel_guarda_hidraulica: datosGasometroTemp.guarda,
                         estado_sopladores: datosGasometroTemp.sopladores_ok ? 'Operativo' : 'Falla',
+                        flujo_agua_trampa: datosGasometroTemp.agua_trampa,
+                        estado_valvula_corte: datosGasometroTemp.valvula_corte,
                         observaciones: datosGasometroTemp.observaciones,
                         foto_anclaje: fotosGasometroTemp.anclaje,
                         foto_altura: fotosGasometroTemp.altura,
                         foto_presion: fotosGasometroTemp.presion,
                         foto_lel: fotosGasometroTemp.lel,
                         foto_guarda: fotosGasometroTemp.guarda,
-                        foto_sopladores: fotosGasometroTemp.sopladores
+                        foto_sopladores: fotosGasometroTemp.sopladores,
+                        foto_trampa: fotosGasometroTemp.trampa
                     }]);
                 }
                 
@@ -496,7 +532,7 @@
                             <div className="bg-[#2a2a2a] p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm border border-zinc-700">
                                 <div className="text-6xl mb-6">✅</div>
                                 <h2 className="text-2xl font-bold text-white tracking-wide">Ronda Finalizada</h2>
-                                <p className="text-zinc-400 text-sm mt-2 mb-8">Todos los datos y las 6 fotografias han sido guardadas.</p>
+                                <p className="text-zinc-400 text-sm mt-2 mb-8">Todos los datos y las 7 fotografias han sido guardadas con exito.</p>
                                 <button onClick={() => window.location.reload()} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold py-4 rounded-xl shadow-lg transition-all uppercase tracking-wider">Nuevo Turno</button>
                             </div>
                         </div>
