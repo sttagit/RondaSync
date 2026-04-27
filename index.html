@@ -135,7 +135,7 @@
         }
 
         // ==========================================
-        // LOGIN CORPORATIVO (PARCHE DE RECARGA AUTOMÁTICA)
+        // LOGIN CORPORATIVO
         // ==========================================
         function PantallaLogin() {
             const [email, setEmail] = useState('');
@@ -165,7 +165,6 @@
                         setMensajeError('Error al establecer la sesión.');
                         setLoading(false);
                     } else {
-                        // AQUÍ ESTÁ EL PARCHE: Forzar la recarga del navegador tras el éxito
                         window.location.reload();
                     }
                 } catch (err) {
@@ -719,7 +718,7 @@
                         <MultiFotoUploader idCampo="gabinete" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos del Panel / Instrumentos" />
                     </div>
 
-                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-200">
                          <label className="text-[10px] text-gray-500 font-black uppercase mb-2 block tracking-widest">Observaciones Generales</label>
                          {observationMissing && <p className="text-[10px] text-red-600 font-black mb-2 animate-pulse uppercase">⚠️ Registro de observación obligatorio (Alarmas o Fallas activas)</p>}
                          <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border-2 p-4 rounded-2xl text-sm font-medium transition-all outline-none focus:border-aguas-blue ${observationMissing ? 'bg-red-50 border-red-400 shadow-inner' : 'bg-gray-50 border-gray-200 text-gray-800'}`} rows="4" placeholder="Justifique alarmas LEL, niveles críticos, daños o fallas eléctricas..."></textarea>
@@ -793,82 +792,99 @@
 
             const handleSaveScada = async (scadaPayload) => {
                 setIsSaving(true);
-                const payload = {
-                    turno_token: shiftToken,
-                    operador_nombre: currentScada?.operador_nombre ? currentScada.operador_nombre : user.email,
-                    tipo_turno: shiftToken.includes('DIA') ? '08:00 a 20:00' : '20:00 a 08:00',
-                    scada_dig_nivel_cm: scadaPayload.dig_nivel || null,
-                    scada_dig_presion_mbar: scadaPayload.dig_presion || null,
-                    scada_dig_temp_c: scadaPayload.dig_temp || null,
-                    scada_nivel_gasometro: scadaPayload.gas_nivel || null,
-                    scada_presion_mbar: scadaPayload.gas_presion || null,
-                    scada_flujo_biogas_nm3h: scadaPayload.comp_flujo || null,
-                    scada_comp_presion_imp_mbar: scadaPayload.comp_pres_imp || null,
-                    scada_cald_flujo_m3h: scadaPayload.cald_flujo || null,
-                    scada_ant_flujo_m3h: scadaPayload.ant_flujo || null
-                };
+                try {
+                    const payload = {
+                        turno_token: shiftToken,
+                        operador_nombre: currentScada?.operador_nombre ? currentScada.operador_nombre : user.email,
+                        tipo_turno: shiftToken.includes('DIA') ? '08:00 a 20:00' : '20:00 a 08:00',
+                        scada_dig_nivel_cm: scadaPayload.dig_nivel || null,
+                        scada_dig_presion_mbar: scadaPayload.dig_presion || null,
+                        scada_dig_temp_c: scadaPayload.dig_temp || null,
+                        scada_nivel_gasometro: scadaPayload.gas_nivel || null,
+                        scada_presion_mbar: scadaPayload.gas_presion || null,
+                        scada_flujo_biogas_nm3h: scadaPayload.comp_flujo || null,
+                        scada_comp_presion_imp_mbar: scadaPayload.comp_pres_imp || null,
+                        scada_cald_flujo_m3h: scadaPayload.cald_flujo || null,
+                        scada_ant_flujo_m3h: scadaPayload.ant_flujo || null
+                    };
 
-                if (!currentScada?.hora_inicio) payload.hora_inicio = new Date();
+                    if (!currentScada?.hora_inicio) payload.hora_inicio = new Date();
 
-                if (currentScada?.id) {
-                    await supabaseClient.from('registro_turnos').update(payload).eq('id', currentScada.id);
-                } else {
-                    await supabaseClient.from('registro_turnos').insert([payload]);
+                    const { error } = currentScada?.id 
+                        ? await supabaseClient.from('registro_turnos').update(payload).eq('id', currentScada.id)
+                        : await supabaseClient.from('registro_turnos').insert([payload]);
+                    
+                    if (error) throw error;
+                    
+                    await cargarDatosColaborativos();
+                    setIsSaving(false);
+                    setPantallaActiva('hub');
+                } catch (error) {
+                    console.error(error);
+                    alert("Error guardando SCADA: " + error.message);
+                    setIsSaving(false);
                 }
-                
-                await cargarDatosColaborativos();
-                setIsSaving(false);
-                setPantallaActiva('hub');
             };
 
             const handleSaveGasometro = async (data) => {
                 setIsSaving(true);
-                const payload = {
-                    turno_token: shiftToken,
-                    operador_nombre: currentGas?.operador_nombre ? currentGas.operador_nombre : user.email,
-                    estado_anclajes: data.anclajes,
-                    altura_interna_m: data.altura || null, 
-                    presion_inter_membrana_mbar: data.presion || null, 
-                    lectura_lel_porcentaje: data.lel || null, 
-                    nivel_guarda_hidraulica: data.guarda,
-                    soplador_1_estado: data.soplador_1, 
-                    soplador_2_estado: data.soplador_2, 
-                    sopladores_condicion_mecanica: data.condicion_sopladores, 
-                    flujo_agua_trampa: data.agua_trampa, 
-                    estado_valvula_corte: data.valvula_corte,
-                    estado_gabinete_electrico: data.gabinete, 
-                    observaciones: data.observaciones,
-                    foto_anclaje: data.fotos.anclaje, foto_altura: data.fotos.altura,
-                    foto_presion: data.fotos.presion, foto_lel: data.fotos.lel,
-                    foto_guarda: data.fotos.guarda, foto_sopladores: data.fotos.sopladores,
-                    foto_trampa: data.fotos.trampa, foto_gabinete: data.fotos.gabinete
-                };
+                try {
+                    const payload = {
+                        turno_token: shiftToken,
+                        operador_nombre: currentGas?.operador_nombre ? currentGas.operador_nombre : user.email,
+                        estado_anclajes: data.anclajes,
+                        altura_interna_m: data.altura || null, 
+                        presion_inter_membrana_mbar: data.presion || null, 
+                        lectura_lel_porcentaje: data.lel || null, 
+                        nivel_guarda_hidraulica: data.guarda,
+                        soplador_1_estado: data.soplador_1, 
+                        soplador_2_estado: data.soplador_2, 
+                        sopladores_condicion_mecanica: data.condicion_sopladores, 
+                        flujo_agua_trampa: data.agua_trampa, 
+                        estado_valvula_corte: data.valvula_corte,
+                        estado_gabinete_electrico: data.gabinete, 
+                        observaciones: data.observaciones,
+                        foto_anclaje: data.fotos.anclaje, foto_altura: data.fotos.altura,
+                        foto_presion: data.fotos.presion, foto_lel: data.fotos.lel,
+                        foto_guarda: data.fotos.guarda, foto_sopladores: data.fotos.sopladores,
+                        foto_trampa: data.fotos.trampa, foto_gabinete: data.fotos.gabinete
+                    };
 
-                if (currentGas?.id) {
-                    await supabaseClient.from('inspeccion_gasometro').update(payload).eq('id', currentGas.id);
-                } else {
-                    await supabaseClient.from('inspeccion_gasometro').insert([payload]);
+                    const { error } = currentGas?.id 
+                        ? await supabaseClient.from('inspeccion_gasometro').update(payload).eq('id', currentGas.id)
+                        : await supabaseClient.from('inspeccion_gasometro').insert([payload]);
+                    
+                    if (error) throw error;
+                    
+                    await cargarDatosColaborativos();
+                    setIsSaving(false);
+                    setPantallaActiva('hub');
+                } catch (error) {
+                    console.error(error);
+                    alert("Error guardando Gasómetro: " + error.message);
+                    setIsSaving(false);
                 }
-                
-                await cargarDatosColaborativos();
-                setIsSaving(false);
-                setPantallaActiva('hub');
             };
 
             const manejarFinalizacionTotal = async () => {
                 setIsSaving(true);
                 try {
                     if (currentScada?.id) {
-                        await supabaseClient.from('registro_turnos').update({
+                        const { error } = await supabaseClient.from('registro_turnos').update({
                             estado_ronda: 'Completada', 
                             hora_fin: new Date(),
                             setpoints_ajustados: huboAjustes ? ajustesOperacionales : null,
                             operadores_adicionales: operadoresAdicionales || null
                         }).eq('id', currentScada.id);
+                        
+                        if (error) throw error;
                     }
                     setIsSaving(false);
                     setPantallaActiva('fin');
-                } catch (error) { alert("Error: " + error.message); setIsSaving(false); }
+                } catch (error) { 
+                    alert("Error finalizando turno: " + error.message); 
+                    setIsSaving(false); 
+                }
             };
 
             if (pantallaActiva === 'hub') {
