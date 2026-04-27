@@ -14,6 +14,9 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // ==========================================
+        // CONFIGURACIÓN DE SUPABASE
+        // ==========================================
         const SUPABASE_URL = 'https://cbvipsjpvlgyipifidyo.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_-9xy9fwszhg5RMqlilNn-A_wnK2VGCb';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -24,6 +27,9 @@
             return <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold">Ant: {valor}</span>;
         };
 
+        // ==========================================
+        // COMPONENTE: MULTI-FOTO UPLOADER
+        // ==========================================
         function MultiFotoUploader({ idCampo, turnoId, onFotosActualizadas, titulo }) {
             const [fotos, setFotos] = useState([]);
             const [subiendoIndex, setSubiendoIndex] = useState(null);
@@ -87,11 +93,13 @@
                             </label>
                         )}
                     </div>
-                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight text-center mt-1">{titulo}</p>
                 </div>
             );
         }
 
+        // ==========================================
+        // COMPONENTE: LOGIN
+        // ==========================================
         function PantallaLogin() {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -124,15 +132,88 @@
             );
         }
 
-        function VistaResumen({ onComplete }) {
-            return (
-                <div className="p-4 max-w-md mx-auto min-h-screen font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg mb-6"><h2 className="text-xl font-bold">Resumen Turno Anterior</h2></div>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 shadow-sm">
-                        <h3 className="text-sm font-black text-yellow-800 uppercase mb-3">Novedades Reportadas</h3>
-                        <ul className="text-sm text-yellow-900 space-y-2 list-disc pl-4 font-medium"><li>Sin novedades críticas registradas en el turno anterior.</li></ul>
+        // ==========================================
+        // VISTAS PREVIAS (RESUMEN DINÁMICO, SCADA, RIESGOS)
+        // ==========================================
+        function VistaResumen({ prevValores, onComplete }) {
+            const turno = prevValores?.turno;
+            const gasometro = prevValores?.gasometro;
+
+            if (!turno) {
+                return (
+                    <div className="p-4 max-w-md mx-auto min-h-screen font-sans">
+                        <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg mb-6"><h2 className="text-xl font-bold">Resumen Turno Anterior</h2></div>
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center">
+                            <p className="text-sm text-gray-500 font-bold">No hay registros de turnos anteriores disponibles.</p>
+                        </div>
+                        <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest hover:bg-emerald-700 transition-colors">Entendido</button>
                     </div>
-                    <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest hover:bg-emerald-700 transition-colors">Entendido</button>
+                );
+            }
+
+            const fechaTurno = new Date(turno.created_at).toLocaleString();
+            const observaciones = gasometro?.observaciones || "Sin observaciones adicionales.";
+            
+            // Lógica de detección de anomalías del turno anterior
+            const anomalias = [];
+            if (gasometro?.estado_anclajes && gasometro.estado_anclajes !== 'Optimo') anomalias.push(`Anclajes: ${gasometro.estado_anclajes}`);
+            if (gasometro?.lectura_lel_porcentaje > 0) anomalias.push(`LEL Detectado: ${gasometro.lectura_lel_porcentaje}%`);
+            if (gasometro?.nivel_guarda_hidraulica && gasometro.nivel_guarda_hidraulica !== 'Nivel Normal') anomalias.push(`Guarda Hidráulica: ${gasometro.nivel_guarda_hidraulica}`);
+            if (gasometro?.sopladores_condicion_mecanica && gasometro.sopladores_condicion_mecanica !== 'Operación Normal (Sin ruidos/vibración)') anomalias.push(`Sopladores: ${gasometro.sopladores_condicion_mecanica}`);
+            if (gasometro?.flujo_agua_trampa === false) anomalias.push(`Trampa: Sin flujo de agua (Pérdida de sello)`);
+            if (gasometro?.estado_valvula_corte === 'Sin candado de seguridad') anomalias.push(`Válvula Corte: Sin candado LOTO`);
+            if (gasometro?.estado_gabinete_electrico && !gasometro.estado_gabinete_electrico.includes('Operativo')) anomalias.push(`Gabinete: ${gasometro.estado_gabinete_electrico}`);
+
+            return (
+                <div className="p-4 max-w-md mx-auto min-h-screen font-sans pb-10">
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl mb-6 flex items-center">
+                        <span className="text-2xl mr-3">📋</span>
+                        <h2 className="text-lg font-black uppercase tracking-tight">Traspaso de Turno</h2>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Info General */}
+                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Operador Saliente</p>
+                                <p className="text-sm font-bold text-gray-800">{turno.operador_nombre}</p>
+                                <p className="text-[10px] text-gray-500 mt-1">{fechaTurno}</p>
+                            </div>
+                            <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-black border border-blue-200">
+                                {turno.tipo_turno}
+                            </div>
+                        </div>
+
+                        {/* Observaciones Generales */}
+                        <div className="bg-amber-50 rounded-2xl p-4 shadow-sm border border-amber-200">
+                            <h3 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">📝</span> Observaciones del Turno</h3>
+                            <p className="text-sm text-amber-900 font-medium italic">"{observaciones}"</p>
+                        </div>
+
+                        {/* Anomalías Detectadas (Solo aparece si hay fallas) */}
+                        {anomalias.length > 0 && (
+                            <div className="bg-red-50 rounded-2xl p-4 shadow-sm border border-red-200">
+                                <h3 className="text-[10px] font-black text-red-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">⚠️</span> Atención Requerida (Heredado)</h3>
+                                <ul className="space-y-2">
+                                    {anomalias.map((anom, idx) => (
+                                        <li key={idx} className="text-xs text-red-700 font-bold bg-white p-2 rounded border border-red-100">• {anom}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Resumen SCADA Clave */}
+                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Niveles SCADA Finales</h3>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Nivel Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_nivel_cm || '-'} cm</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Nivel Gas.</span><span className="font-bold text-gray-800">{turno.scada_nivel_gasometro || '-'} %</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Pres. Gas.</span><span className="font-bold text-gray-800">{turno.scada_presion_mbar || '-'} mbar</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-3xl shadow-xl mt-8 uppercase tracking-widest hover:bg-emerald-700 transition-all transform active:scale-95">Tomar Control del Turno</button>
                 </div>
             );
         }
@@ -181,27 +262,13 @@
             
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
-                        <h2 className="text-xl font-bold">Seguridad y EPP</h2>
-                    </div>
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Seguridad y EPP</h2></div>
                     <div className="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 className="text-xs font-black text-gray-800 uppercase mb-4 border-b pb-2">Implementos y Equipos Obligatorios</h3>
-                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
-                            <input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
-                            <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">EPP:</b> Casco, lentes, guantes y zapatos de seguridad</span>
-                        </label>
-                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
-                            <input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
-                            <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Equipos:</b> Detector multigas CH4, CO2, O2 y H2S</span>
-                        </label>
-                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
-                            <input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
-                            <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Protección:</b> Máscara para gases tóxicos</span>
-                        </label>
-                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
-                            <input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
-                            <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Artículos ATEX:</b> Tablet o Smartphone y Linterna certificados</span>
-                        </label>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">EPP:</b> Casco, lentes, guantes y zapatos</span></label>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Equipos:</b> Detector multigas CH4, CO2, O2 y H2S</span></label>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Protección:</b> Máscara para gases tóxicos</span></label>
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Artículos ATEX:</b> Tablet/Smartphone y Linterna</span></label>
                     </div>
                     <div className="bg-red-50 rounded-2xl shadow-sm border border-red-200 p-5">
                         <h3 className="text-xs font-black text-red-800 uppercase mb-3 border-b border-red-200 pb-2">Precaución Riesgo ATEX</h3>
@@ -211,17 +278,15 @@
                             <label className="flex items-center space-x-3 p-2 bg-white rounded-lg border border-red-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, ax3:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-[11px] font-bold text-red-900">Z2: 0.35m de Bridas/Inst.</span></label>
                         </div>
                     </div>
-                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest transition-all ${listo ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400 opacity-50 cursor-not-allowed'}`}>
-                        CONTINUAR
-                    </button>
+                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest transition-all ${listo ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400 opacity-50 cursor-not-allowed'}`}>CONTINUAR</button>
                 </div>
             );
         }
 
         // ==========================================
-        // COMPONENTE: HUB CENTRAL
+        // COMPONENTE: HUB CENTRAL (ACTUALIZADO PARA PASAR PREVVALORES)
         // ==========================================
-        function HubCentral({ userEmail, prevTurnoData, avanzarAInstalaciones }) {
+        function HubCentral({ userEmail, prevValores, avanzarAInstalaciones }) {
             const [fechaHora, setFechaHora] = useState(new Date());
             const [turnoDetectado, setTurnoDetectado] = useState('');
             const [hubState, setHubState] = useState({ resumenOk: false, scadaData: null, riesgosOk: false, subvistaActiva: 'hub' });
@@ -236,8 +301,8 @@
             const scadaOk = hubState.scadaData !== null;
             const listoParaRonda = hubState.resumenOk && scadaOk && hubState.riesgosOk;
 
-            if (hubState.subvistaActiva === 'resumen') return <VistaResumen onComplete={() => setHubState({...hubState, resumenOk: true, subvistaActiva: 'hub'})} />;
-            if (hubState.subvistaActiva === 'scada') return <VistaScada datosGuardados={hubState.scadaData} prevData={prevTurnoData} onComplete={(data) => setHubState({...hubState, scadaData: data, subvistaActiva: 'hub'})} />;
+            if (hubState.subvistaActiva === 'resumen') return <VistaResumen prevValores={prevValores} onComplete={() => setHubState({...hubState, resumenOk: true, subvistaActiva: 'hub'})} />;
+            if (hubState.subvistaActiva === 'scada') return <VistaScada datosGuardados={hubState.scadaData} prevData={prevValores?.turno} onComplete={(data) => setHubState({...hubState, scadaData: data, subvistaActiva: 'hub'})} />;
             if (hubState.subvistaActiva === 'riesgos') return <VistaRiesgos onComplete={() => setHubState({...hubState, riesgosOk: true, subvistaActiva: 'hub'})} />;
 
             return (
@@ -257,7 +322,7 @@
                         <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Auto</div>
                     </div>
                     <div className="space-y-3">
-                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'resumen'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${hubState.resumenOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{hubState.resumenOk ? '✅' : '📋'}</span><span className={`font-black text-sm uppercase ${hubState.resumenOk ? 'text-emerald-800' : 'text-gray-700'}`}>Turno Anterior</span></div></button>
+                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'resumen'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${hubState.resumenOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{hubState.resumenOk ? '✅' : '📋'}</span><span className={`font-black text-sm uppercase ${hubState.resumenOk ? 'text-emerald-800' : 'text-gray-700'}`}>Traspaso de Turno</span></div></button>
                         <button onClick={() => setHubState({...hubState, subvistaActiva: 'scada'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${scadaOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{scadaOk ? '✅' : '🖥️'}</span><span className={`font-black text-sm uppercase ${scadaOk ? 'text-emerald-800' : 'text-gray-700'}`}>Datos SCADA</span></div></button>
                         <button onClick={() => setHubState({...hubState, subvistaActiva: 'riesgos'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${hubState.riesgosOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{hubState.riesgosOk ? '✅' : '🛑'}</span><span className={`font-black text-sm uppercase ${hubState.riesgosOk ? 'text-emerald-800' : 'text-gray-700'}`}>Seguridad y EPP</span></div></button>
                     </div>
@@ -271,7 +336,7 @@
         // ==========================================
         // COMPONENTE: MENÚ DE INSTALACIONES
         // ==========================================
-        function MenuInstalaciones({ areasDone, irAGasometro, finalizarTurno, loadingDb }) {
+        function MenuInstalaciones({ areasDone, irAGasometro, revisarYFinalizar }) {
             const urlDigestor = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Digestor.jpg";
             const urlGasometro = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Gasometro%20vista%20general.jpeg";
             const urlCompresores = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Sala%20de%20Compresores.jpg";
@@ -295,14 +360,88 @@
                         </div>
                     </div>
                     <div className="pt-10 pb-10 border-t border-gray-200">
-                        <button onClick={finalizarTurno} disabled={loadingDb} className="w-full bg-zinc-900 text-white font-black py-5 rounded-3xl shadow-2xl uppercase tracking-widest transition-all transform active:scale-95">{loadingDb ? 'Guardando...' : 'Finalizar Turno'}</button>
+                        <button onClick={revisarYFinalizar} className="w-full bg-zinc-900 text-white font-black py-5 rounded-3xl shadow-2xl uppercase tracking-widest transition-all transform active:scale-95">REVISAR Y FINALIZAR</button>
                     </div>
                 </div>
             );
         }
 
         // ==========================================
-        // FORMULARIO GASÓMETRO (ACTUALIZADO ALARMAS + PC-6)
+        // COMPONENTE: RESUMEN FINAL
+        // ==========================================
+        function VistaResumenFinal({ turnoContexto, datosGasometro, setDatosGasometro, onConfirm, onBack, loading }) {
+            const actualizarObservacion = (e) => {
+                if(datosGasometro) {
+                    setDatosGasometro({...datosGasometro, observaciones: e.target.value});
+                }
+            };
+
+            return (
+                <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-100 pb-20">
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl flex items-center sticky top-0 z-20">
+                        <span className="text-2xl mr-3">📋</span>
+                        <h2 className="text-lg font-black uppercase tracking-tight">Confirmación de Ronda</h2>
+                    </div>
+
+                    <p className="text-xs text-gray-500 font-medium px-2">Revise detalladamente los datos registrados. Puede editar las observaciones generales antes de firmar el reporte.</p>
+
+                    <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200">
+                        <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-b pb-2 mb-3">Resumen SCADA</h3>
+                        <div className="grid grid-cols-2 gap-y-3 text-xs">
+                            <div className="text-gray-500">Nivel Dig.: <b className="text-gray-800">{turnoContexto?.scada?.dig_nivel || '-'} cm</b></div>
+                            <div className="text-gray-500">Pres. Dig.: <b className="text-gray-800">{turnoContexto?.scada?.dig_presion || '-'} mbar</b></div>
+                            <div className="text-gray-500">Nivel Gas.: <b className="text-gray-800">{turnoContexto?.scada?.gas_nivel || '-'} %</b></div>
+                            <div className="text-gray-500">Pres. Gas.: <b className="text-gray-800">{turnoContexto?.scada?.gas_presion || '-'} mbar</b></div>
+                            <div className="text-gray-500">Flujo Comp.: <b className="text-gray-800">{turnoContexto?.scada?.comp_flujo || '-'} m3/h</b></div>
+                        </div>
+                    </div>
+
+                    {datosGasometro ? (
+                        <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200">
+                            <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border-b pb-2 mb-3">Terreno: Gasómetro</h3>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-500">Altura:</span> <b className="text-gray-800">{datosGasometro.altura} m</b></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-500">Presión:</span> <b className="text-gray-800">{datosGasometro.presion} mbar</b></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-500">LEL Max:</span> <b className={parseFloat(datosGasometro.lel) > 0 ? "text-red-600" : "text-gray-800"}>{datosGasometro.lel} %</b></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-500">Guarda Hidr.:</span> <b className="text-gray-800">{datosGasometro.guarda}</b></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-500">Soplador 1:</span> <b className="text-gray-800">{datosGasometro.soplador_1}</b></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-500">Soplador 2:</span> <b className="text-gray-800">{datosGasometro.soplador_2}</b></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-500">Agua Trampa:</span> <b className={datosGasometro.agua_trampa ? "text-emerald-600" : "text-red-600"}>{datosGasometro.agua_trampa ? 'OK' : 'Falla'}</b></div>
+                                <div className="flex justify-between"><span className="text-gray-500">Tablero Eléctrico:</span> <b className={datosGasometro.gabinete.includes('Operativo') ? "text-emerald-600 truncate max-w-[150px]" : "text-red-600 truncate max-w-[150px]"}>{datosGasometro.gabinete}</b></div>
+                            </div>
+                            
+                            <div className="mt-5">
+                                <label className="text-[10px] text-gray-500 font-black uppercase mb-2 block tracking-widest">Observaciones y Anomalias (Editable)</label>
+                                <textarea 
+                                    value={datosGasometro.observaciones} 
+                                    onChange={actualizarObservacion} 
+                                    className="w-full border-2 border-amber-200 bg-amber-50 p-4 rounded-2xl text-sm font-medium text-amber-900 focus:outline-none focus:border-amber-400" 
+                                    rows="4" 
+                                    placeholder="Agregue detalles finales de la ronda aquí..."
+                                ></textarea>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-red-50 p-4 rounded-3xl shadow-sm border border-red-200">
+                            <h3 className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Terreno: Gasómetro</h3>
+                            <p className="text-xs text-red-800 font-medium">No se realizó el registro de terreno en este módulo.</p>
+                        </div>
+                    )}
+
+                    <div className="space-y-3 pt-4">
+                        <button onClick={onConfirm} disabled={loading} className="w-full bg-emerald-600 text-white font-black py-6 rounded-3xl shadow-xl uppercase tracking-[0.1em] transition-all transform active:scale-95">
+                            {loading ? 'FIRMANDO...' : 'FIRMADO Y CONFORME - GUARDAR'}
+                        </button>
+                        <button onClick={onBack} disabled={loading} className="w-full bg-gray-300 text-gray-700 font-black py-4 rounded-3xl uppercase tracking-widest transition-all">
+                            Volver y Editar
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // FORMULARIO GASÓMETRO
         // ==========================================
         function FormularioGasometro({ turnoId, prevData, listaFallas, listaEstadosSopladores, onTerminado }) {
             const [fd, setFd] = useState({ 
@@ -322,19 +461,16 @@
             const h = parseFloat(fd.altura); 
             const lel = parseFloat(fd.lel);
             
-            // Límites Críticos (Alarmas)
             const alarmaAltura = h > 10.1;
             const alarmaPresion = p >= 25;
             const alarmaLel = lel > 0;
             
-            // Obligatoriedad de Observación
             const requiresObservation = alarmaLel || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' || !fd.agua_trampa || fd.valvula_corte === 'Sin candado de seguridad' || fd.gabinete !== 'Operativo (Luces normales, cerrado)' || alarmaAltura || alarmaPresion;
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
             
             const fotosCompletas = Object.values(fotos).every(arr => arr && arr.length > 0);
             const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
             
-            // El submit ya NO bloquea por isCritical (porque necesitan reportar la falla). Solo bloquea si faltan datos/fotos/observaciones.
             const canSubmit = fotosCompletas && datosCompletos && !observationMissing;
 
             const fallbackFallas = [
@@ -376,7 +512,6 @@
                         <h2 className="text-lg font-black uppercase tracking-tight">Ronda Gasometro</h2>
                     </div>
                     
-                    {/* PC 1 */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-1: Membranas y Anclaje Base</h3>
                         <select onChange={e=>setFd({...fd, anclajes:e.target.value})} className={`w-full border-2 p-3 rounded-xl font-bold text-sm mb-2 transition-colors ${fd.anclajes !== 'Optimo' ? 'bg-yellow-50 border-yellow-300 text-yellow-800' : 'bg-gray-50 border-gray-100'}`}>
@@ -392,7 +527,6 @@
                         <MultiFotoUploader idCampo="anclaje" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Base, Pernos y Lonas" />
                     </div>
 
-                    {/* PC 2 (CON ALARMAS ROJAS) */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md space-y-8">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-2">PC-2: Lecturas Medidores Gasómetro</h3>
                         
@@ -418,7 +552,6 @@
                         </div>
                     </div>
 
-                    {/* PC 3 */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-3: Guarda Hidráulica</h3>
                         <div className="flex justify-between items-center mb-2"><label className="text-xs text-gray-500 font-bold uppercase">Nivel en Visor</label><Fantasma valor={prevData?.nivel_guarda_hidraulica} /></div>
@@ -428,7 +561,6 @@
                         <MultiFotoUploader idCampo="guarda" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Visor de Nivel" />
                     </div>
 
-                    {/* PC 4 */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest border-b pb-2">PC-4: Inyeccion de Aire</h3>
                         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -436,10 +568,9 @@
                             <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 2</label><select onChange={e=>setFd({...fd, soplador_2: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
                         </div>
                         <div className="mb-4"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Condición Mecánica</label><select onChange={e=>setFd({...fd, condicion_sopladores: e.target.value})} className={`w-full border-2 p-4 rounded-xl text-xs font-black transition-colors ${fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-50'}`}>{estadosAUsar.map(estado => <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>)}</select></div>
-                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores / Damper" />
+                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores/Damper" />
                     </div>
 
-                    {/* PC 5 */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-5: Linea de Biogas</h3>
                         <label className={`flex items-center space-x-3 p-4 rounded-2xl border-2 mb-4 transition-all ${fd.agua_trampa ? 'bg-gray-50 border-gray-100' : 'bg-red-50 border-red-300 shadow-inner'}`}><input type="checkbox" defaultChecked onChange={e=>setFd({...fd, agua_trampa: e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg" /><span className={`text-xs font-black uppercase ${fd.agua_trampa ? 'text-gray-700' : 'text-red-700'}`}>Agua constante OK</span></label>
@@ -447,7 +578,6 @@
                         <MultiFotoUploader idCampo="trampa" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Trampa y Válvula" />
                     </div>
 
-                    {/* PC 6: NUEVO - GABINETE ELÉCTRICO */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-6: Gabinete de Control Eléctrico</h3>
                         <div className="mb-2"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Estado del Tablero</label>
@@ -470,7 +600,7 @@
 
                     {!fotosCompletas && <p className="text-center text-[10px] text-red-600 font-black uppercase tracking-tighter pt-4 animate-bounce">Mínimo 1 fotografía por cada PC (Son 8 Puntos) para finalizar</p>}
                     
-                    <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-6 rounded-3xl shadow-2xl mt-6 uppercase tracking-[0.2em] transition-all transform active:scale-95 ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}>Finalizar Gasómetro</button>
+                    <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-6 rounded-3xl shadow-2xl mt-6 uppercase tracking-[0.2em] transition-all transform active:scale-95 ${canSubmit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}>Aceptar y Volver</button>
                 </div>
             );
         }
@@ -529,6 +659,9 @@
                 setPantallaActiva('instalaciones');
             };
 
+            const abrirResumen = () => setPantallaActiva('resumen_final');
+            const volverAInstalaciones = () => setPantallaActiva('instalaciones');
+
             const manejarFinalizacionTotal = async () => {
                 setIsSavingDb(true);
                 try {
@@ -549,8 +682,7 @@
                             soplador_1_estado: datosGasometroTemp.soplador_1, soplador_2_estado: datosGasometroTemp.soplador_2, 
                             sopladores_condicion_mecanica: datosGasometroTemp.condicion_sopladores, 
                             flujo_agua_trampa: datosGasometroTemp.agua_trampa, estado_valvula_corte: datosGasometroTemp.valvula_corte,
-                            estado_gabinete_electrico: datosGasometroTemp.gabinete,
-                            observaciones: datosGasometroTemp.observaciones,
+                            estado_gabinete_electrico: datosGasometroTemp.gabinete, observaciones: datosGasometroTemp.observaciones,
                             foto_anclaje: fotosGasometroTemp.anclaje, foto_altura: fotosGasometroTemp.altura,
                             foto_presion: fotosGasometroTemp.presion, foto_lel: fotosGasometroTemp.lel,
                             foto_guarda: fotosGasometroTemp.guarda, foto_sopladores: fotosGasometroTemp.sopladores,
@@ -564,9 +696,10 @@
 
             return (
                 <div className="bg-gray-100 min-h-screen">
-                    {pantallaActiva === 'hub' && <HubCentral userEmail={user.email} prevTurnoData={valoresAnteriores.turno} avanzarAInstalaciones={manejarArranqueRonda} />}
-                    {pantallaActiva === 'instalaciones' && <MenuInstalaciones areasDone={areasStatus} irAGasometro={() => setPantallaActiva('form_gasometro')} finalizarTurno={manejarFinalizacionTotal} loadingDb={isSavingDb} />}
+                    {pantallaActiva === 'hub' && <HubCentral userEmail={user.email} prevValores={valoresAnteriores} avanzarAInstalaciones={manejarArranqueRonda} />}
+                    {pantallaActiva === 'instalaciones' && <MenuInstalaciones areasDone={areasStatus} irAGasometro={() => setPantallaActiva('form_gasometro')} revisarYFinalizar={abrirResumen} />}
                     {pantallaActiva === 'form_gasometro' && <FormularioGasometro turnoId={turnoContexto.turnoIdBd} prevData={valoresAnteriores.gasometro} listaFallas={listaFallas} listaEstadosSopladores={listaEstadosSopladores} onTerminado={(d, f) => { setDatosGasometroTemp(d); setFotosGasometroTemp(f); setAreasStatus({...areasStatus, gasometro: true}); setPantallaActiva('instalaciones'); }} />}
+                    {pantallaActiva === 'resumen_final' && <VistaResumenFinal turnoContexto={turnoContexto} datosGasometro={datosGasometroTemp} setDatosGasometro={setDatosGasometroTemp} onConfirm={manejarFinalizacionTotal} onBack={volverAInstalaciones} loading={isSavingDb} />}
                     {pantallaActiva === 'fin' && (
                         <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#1e1e1e] text-center text-white">
                             <div className="bg-[#2a2a2a] p-10 rounded-[3rem] border border-zinc-700 shadow-2xl">
