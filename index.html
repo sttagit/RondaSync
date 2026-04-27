@@ -148,7 +148,7 @@
                         .from('registro_turnos')
                         .select('*, inspeccion_gasometro(*)')
                         .order('created_at', { ascending: false })
-                        .limit(10); // Carga las ultimas 10 rondas
+                        .limit(14); // Carga las ultimas 14 rondas
                     
                     if (!error && turnos) {
                         setData(turnos);
@@ -683,7 +683,7 @@
                     </div>
 
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
-                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest border-b pb-2">PC-4: Inyeccion de Aire</h3>
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest border-b pb-2">PC-4: Aire Intermembranas</h3>
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 1</label><select onChange={e=>setFd({...fd, soplador_1: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
                             <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 2</label><select onChange={e=>setFd({...fd, soplador_2: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
