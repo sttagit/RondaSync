@@ -135,7 +135,7 @@
         }
 
         // ==========================================
-        // LOGIN CORPORATIVO (ACTUALIZADO CON MANEJO DE ERRORES)
+        // LOGIN CORPORATIVO (PARCHE DE RECARGA AUTOMÁTICA)
         // ==========================================
         function PantallaLogin() {
             const [email, setEmail] = useState('');
@@ -147,13 +147,12 @@
             const manejarLogin = async (e) => {
                 e.preventDefault(); 
                 setLoading(true);
-                setMensajeError(''); // Limpiar errores previos
+                setMensajeError(''); 
                 
                 try {
                     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                     
                     if (error) {
-                        // Traducir los errores más comunes de Supabase
                         if (error.message.includes('Invalid login credentials')) {
                             setMensajeError('Correo o contraseña incorrectos.');
                         } else if (error.message.includes('Email not confirmed')) {
@@ -165,8 +164,10 @@
                     } else if (!data.session) {
                         setMensajeError('Error al establecer la sesión.');
                         setLoading(false);
+                    } else {
+                        // AQUÍ ESTÁ EL PARCHE: Forzar la recarga del navegador tras el éxito
+                        window.location.reload();
                     }
-                    // Si todo sale bien, onAuthStateChange (en la función App) detectará la sesión y desmontará esto.
                 } catch (err) {
                     setMensajeError('Fallo de conexión. Revisa tu internet.');
                     setLoading(false);
@@ -186,7 +187,6 @@
                         
                         <form onSubmit={manejarLogin} className="space-y-5">
                             
-                            {/* CAJA DE ERROR VISIBLE */}
                             {mensajeError && (
                                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-[11px] font-bold text-center animate-pulse">
                                     ⚠️ {mensajeError}
@@ -719,7 +719,7 @@
                         <MultiFotoUploader idCampo="gabinete" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos del Panel / Instrumentos" />
                     </div>
 
-                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-200">
+                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
                          <label className="text-[10px] text-gray-500 font-black uppercase mb-2 block tracking-widest">Observaciones Generales</label>
                          {observationMissing && <p className="text-[10px] text-red-600 font-black mb-2 animate-pulse uppercase">⚠️ Registro de observación obligatorio (Alarmas o Fallas activas)</p>}
                          <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border-2 p-4 rounded-2xl text-sm font-medium transition-all outline-none focus:border-aguas-blue ${observationMissing ? 'bg-red-50 border-red-400 shadow-inner' : 'bg-gray-50 border-gray-200 text-gray-800'}`} rows="4" placeholder="Justifique alarmas LEL, niveles críticos, daños o fallas eléctricas..."></textarea>
