@@ -135,19 +135,42 @@
         }
 
         // ==========================================
-        // LOGIN CORPORATIVO
+        // LOGIN CORPORATIVO (ACTUALIZADO CON MANEJO DE ERRORES)
         // ==========================================
         function PantallaLogin() {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
             const [loading, setLoading] = useState(false);
             const [showPassword, setShowPassword] = useState(false);
+            const [mensajeError, setMensajeError] = useState('');
 
             const manejarLogin = async (e) => {
-                e.preventDefault(); setLoading(true);
-                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) alert("Error de ingreso: " + error.message);
-                setLoading(false);
+                e.preventDefault(); 
+                setLoading(true);
+                setMensajeError(''); // Limpiar errores previos
+                
+                try {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    
+                    if (error) {
+                        // Traducir los errores más comunes de Supabase
+                        if (error.message.includes('Invalid login credentials')) {
+                            setMensajeError('Correo o contraseña incorrectos.');
+                        } else if (error.message.includes('Email not confirmed')) {
+                            setMensajeError('Debes confirmar tu correo electrónico.');
+                        } else {
+                            setMensajeError('Error: ' + error.message);
+                        }
+                        setLoading(false);
+                    } else if (!data.session) {
+                        setMensajeError('Error al establecer la sesión.');
+                        setLoading(false);
+                    }
+                    // Si todo sale bien, onAuthStateChange (en la función App) detectará la sesión y desmontará esto.
+                } catch (err) {
+                    setMensajeError('Fallo de conexión. Revisa tu internet.');
+                    setLoading(false);
+                }
             };
 
             return (
@@ -162,6 +185,14 @@
                         </div>
                         
                         <form onSubmit={manejarLogin} className="space-y-5">
+                            
+                            {/* CAJA DE ERROR VISIBLE */}
+                            {mensajeError && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-[11px] font-bold text-center animate-pulse">
+                                    ⚠️ {mensajeError}
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Correo Electrónico</label>
                                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-4 focus:border-aguas-blue focus:bg-white text-gray-800 font-medium outline-none transition-all" required />
