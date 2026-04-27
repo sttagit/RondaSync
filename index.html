@@ -14,26 +14,16 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // ==========================================
-        // CONFIGURACIÓN DE SUPABASE
-        // ==========================================
         const SUPABASE_URL = 'https://cbvipsjpvlgyipifidyo.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_-9xy9fwszhg5RMqlilNn-A_wnK2VGCb';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         const { useState, useEffect } = React;
 
-        // ==========================================
-        // COMPONENTE: ETIQUETA FANTASMA
-        // ==========================================
         const Fantasma = ({ valor }) => {
             if (valor === null || valor === undefined || valor === '') return null;
             return <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold">Ant: {valor}</span>;
         };
 
-        // ==========================================
-        // COMPONENTE: MULTI-FOTO UPLOADER (HASTA 3 FOTOS)
-        // ==========================================
         function MultiFotoUploader({ idCampo, turnoId, onFotosActualizadas, titulo }) {
             const [fotos, setFotos] = useState([]);
             const [subiendoIndex, setSubiendoIndex] = useState(null);
@@ -41,25 +31,18 @@
             const manejarCaptura = (e) => {
                 const archivo = e.target.files[0];
                 if (!archivo || fotos.length >= 3) return;
-
-                const nuevaFoto = {
-                    localUrl: URL.createObjectURL(archivo),
-                    realFile: archivo,
-                    remoteUrl: null
-                };
+                const nuevaFoto = { localUrl: URL.createObjectURL(archivo), realFile: archivo, remoteUrl: null };
                 setFotos([...fotos, nuevaFoto]);
             };
 
             const subirFoto = async (index) => {
                 const foto = fotos[index];
                 if (!foto.realFile || foto.remoteUrl) return;
-
                 setSubiendoIndex(index);
                 const ext = foto.realFile.name.split('.').pop();
                 const nombreArchivo = `${turnoId}-${idCampo}-${index}-${Date.now()}.${ext}`;
 
                 const { error } = await supabaseClient.storage.from('inspeccion_fotos').upload(nombreArchivo, foto.realFile);
-                
                 if (error) {
                     alert("Error: " + error.message);
                 } else {
@@ -84,29 +67,18 @@
                         {fotos.map((foto, index) => (
                             <div key={index} className="relative group">
                                 <img src={foto.localUrl} className="h-24 w-full object-cover rounded-lg border-2 border-white shadow-sm" />
-                                
                                 {!foto.remoteUrl && subiendoIndex !== index && (
-                                    <button onClick={() => subirFoto(index)} className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg">
-                                        <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg">SUBIR</span>
-                                    </button>
+                                    <button onClick={() => subirFoto(index)} className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg"><span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg">SUBIR</span></button>
                                 )}
-
                                 {subiendoIndex === index && (
-                                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-lg">
-                                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
+                                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-lg"><div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>
                                 )}
-
                                 {foto.remoteUrl && (
-                                    <div className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-md">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                    </div>
+                                    <div className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-md"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg></div>
                                 )}
-
                                 <button onClick={() => eliminarFoto(index)} className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg font-bold">×</button>
                             </div>
                         ))}
-                        
                         {fotos.length < 3 && (
                             <label className="h-24 border-2 border-dashed border-blue-300 bg-blue-50 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors shadow-inner">
                                 <span className="text-2xl text-blue-500">+</span>
@@ -120,9 +92,6 @@
             );
         }
 
-        // ==========================================
-        // COMPONENTE: LOGIN
-        // ==========================================
         function PantallaLogin() {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -133,7 +102,7 @@
                 e.preventDefault();
                 setLoading(true);
                 const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) alert("Error: " + error.message);
+                if (error) alert("Error de ingreso: " + error.message);
                 setLoading(false);
             };
 
@@ -155,9 +124,6 @@
             );
         }
 
-        // ==========================================
-        // VISTAS PREVIAS (RESUMEN, SCADA, RIESGOS)
-        // ==========================================
         function VistaResumen({ onComplete }) {
             return (
                 <div className="p-4 max-w-md mx-auto min-h-screen font-sans">
@@ -177,7 +143,6 @@
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
                     <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Ingreso SCADA (WinCC)</h2></div>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-6">
-                        
                         <div>
                             <h4 className="text-xs font-black text-blue-600 uppercase mb-3 border-b pb-1">1. Digestor</h4>
                             <div className="grid grid-cols-3 gap-3">
@@ -186,7 +151,6 @@
                                 <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Temp (°C)</label><Fantasma valor={prevData?.scada_dig_temp_c} /></div><input type="number" value={scada.dig_temp||''} onChange={e => setScada({...scada, dig_temp: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
                             </div>
                         </div>
-
                         <div>
                             <h4 className="text-xs font-black text-amber-600 uppercase mb-3 border-b pb-1">2. Gasometro</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -194,7 +158,6 @@
                                 <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Pres. (mbar)</label><Fantasma valor={prevData?.scada_presion_mbar} /></div><input type="number" value={scada.gas_presion||''} onChange={e => setScada({...scada, gas_presion: e.target.value})} className="w-full border-2 border-amber-100 bg-amber-50 shadow-inner p-3 rounded-xl text-center font-bold text-amber-900" /></div>
                             </div>
                         </div>
-
                         <div>
                             <h4 className="text-xs font-black text-emerald-600 uppercase mb-3 border-b pb-1">3. Compresores y Consumos</h4>
                             <div className="grid grid-cols-2 gap-3 mb-3">
@@ -206,7 +169,6 @@
                                 <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Flujo Antorchas</label><Fantasma valor={prevData?.scada_ant_flujo_m3h} /></div><input type="number" value={scada.ant_flujo||''} onChange={e => setScada({...scada, ant_flujo: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
                             </div>
                         </div>
-
                     </div>
                     <button onClick={() => onComplete(scada)} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-8 uppercase tracking-widest hover:bg-emerald-700 transition-colors">Confirmar Datos SCADA</button>
                 </div>
@@ -216,34 +178,31 @@
         function VistaRiesgos({ onComplete }) {
             const [c, setC] = useState({ epp1:false, epp2:false, epp3:false, epp4:false, ax1:false, ax2:false, ax3:false });
             const listo = c.epp1 && c.epp2 && c.epp3 && c.epp4 && c.ax1 && c.ax2 && c.ax3;
+            
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
-                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Seguridad y EPP</h2></div>
-                    
+                    <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg">
+                        <h2 className="text-xl font-bold">Seguridad y EPP</h2>
+                    </div>
                     <div className="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 className="text-xs font-black text-gray-800 uppercase mb-4 border-b pb-2">Implementos y Equipos Obligatorios</h3>
-                        
                         <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
                             <input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
                             <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">EPP:</b> Casco, lentes, guantes y zapatos de seguridad</span>
                         </label>
-                        
                         <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
                             <input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
                             <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Equipos:</b> Detector multigas CH4, CO2, O2 y H2S</span>
                         </label>
-                        
                         <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
                             <input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
                             <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Protección:</b> Máscara para gases tóxicos</span>
                         </label>
-
                         <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
                             <input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
                             <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Artículos ATEX:</b> Tablet o Smartphone y Linterna certificados</span>
                         </label>
                     </div>
-                    
                     <div className="bg-red-50 rounded-2xl shadow-sm border border-red-200 p-5">
                         <h3 className="text-xs font-black text-red-800 uppercase mb-3 border-b border-red-200 pb-2">Precaución Riesgo ATEX</h3>
                         <div className="space-y-2">
@@ -252,7 +211,6 @@
                             <label className="flex items-center space-x-3 p-2 bg-white rounded-lg border border-red-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, ax3:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-[11px] font-bold text-red-900">Z2: 0.35m de Bridas/Inst.</span></label>
                         </div>
                     </div>
-                    
                     <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest transition-all ${listo ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400 opacity-50 cursor-not-allowed'}`}>
                         CONTINUAR
                     </button>
@@ -344,17 +302,18 @@
         }
 
         // ==========================================
-        // FORMULARIO GASÓMETRO
+        // FORMULARIO GASÓMETRO (ACTUALIZADO ALARMAS + PC-6)
         // ==========================================
         function FormularioGasometro({ turnoId, prevData, listaFallas, listaEstadosSopladores, onTerminado }) {
             const [fd, setFd] = useState({ 
                 anclajes: 'Optimo', altura: '', presion: '', lel: '', guarda: 'Nivel Normal', 
                 soplador_1: 'Stand-by', soplador_2: 'Stand-by', condicion_sopladores: 'Operación Normal (Sin ruidos/vibración)',
-                agua_trampa: true, valvula_corte: 'Abierta (Candado puesto)', observaciones: '' 
+                agua_trampa: true, valvula_corte: 'Abierta (Candado puesto)', 
+                gabinete: 'Operativo (Luces normales, cerrado)', observaciones: '' 
             });
             
             const [fotos, setFotos] = useState({ 
-                anclaje: [], altura: [], presion: [], lel: [], guarda: [], sopladores: [], trampa: [] 
+                anclaje: [], altura: [], presion: [], lel: [], guarda: [], sopladores: [], trampa: [], gabinete: [] 
             });
 
             const manejarFotos = (campo, urls) => setFotos(prev => ({ ...prev, [campo]: urls }));
@@ -363,13 +322,20 @@
             const h = parseFloat(fd.altura); 
             const lel = parseFloat(fd.lel);
             
-            const isCritical = p >= 25 || h > 10.1;
-            const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' || !fd.agua_trampa || fd.valvula_corte === 'Sin candado de seguridad';
+            // Límites Críticos (Alarmas)
+            const alarmaAltura = h > 10.1;
+            const alarmaPresion = p >= 25;
+            const alarmaLel = lel > 0;
+            
+            // Obligatoriedad de Observación
+            const requiresObservation = alarmaLel || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' || !fd.agua_trampa || fd.valvula_corte === 'Sin candado de seguridad' || fd.gabinete !== 'Operativo (Luces normales, cerrado)' || alarmaAltura || alarmaPresion;
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
             
             const fotosCompletas = Object.values(fotos).every(arr => arr && arr.length > 0);
             const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
-            const canSubmit = fotosCompletas && datosCompletos && !isCritical && !observationMissing;
+            
+            // El submit ya NO bloquea por isCritical (porque necesitan reportar la falla). Solo bloquea si faltan datos/fotos/observaciones.
+            const canSubmit = fotosCompletas && datosCompletos && !observationMissing;
 
             const fallbackFallas = [
                 { id: 'f1', grupo: 'Fugas', descripcion: 'Fuga de biogas por perno de anclaje' },
@@ -379,7 +345,6 @@
                 { id: 'm2', grupo: 'Mecanicos', descripcion: 'Doblez o pliegue anormal en membrana' },
                 { id: 'm3', grupo: 'Mecanicos', descripcion: 'Pernos sueltos, cortados o faltantes' },
                 { id: 'm4', grupo: 'Mecanicos', descripcion: 'Corrosion severa en pernos o flanges' },
-                { id: 'm5', grupo: 'Mecanicos', descripcion: 'Acumulacion de agua/suciedad en perfil base' },
                 { id: 'o1', grupo: 'Otros', descripcion: 'Otra anomalia (Detallar en observaciones)' }
             ];
 
@@ -411,6 +376,7 @@
                         <h2 className="text-lg font-black uppercase tracking-tight">Ronda Gasometro</h2>
                     </div>
                     
+                    {/* PC 1 */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-1: Membranas y Anclaje Base</h3>
                         <select onChange={e=>setFd({...fd, anclajes:e.target.value})} className={`w-full border-2 p-3 rounded-xl font-bold text-sm mb-2 transition-colors ${fd.anclajes !== 'Optimo' ? 'bg-yellow-50 border-yellow-300 text-yellow-800' : 'bg-gray-50 border-gray-100'}`}>
@@ -426,28 +392,33 @@
                         <MultiFotoUploader idCampo="anclaje" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Base, Pernos y Lonas" />
                     </div>
 
+                    {/* PC 2 (CON ALARMAS ROJAS) */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md space-y-8">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-2">PC-2: Lecturas Medidores Gasómetro</h3>
                         
-                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                            <div className="flex justify-between items-center mb-2"><label className="text-[10px] text-gray-600 font-black uppercase">Altura Membrana Interna (m)</label><Fantasma valor={prevData?.altura_interna_m} /></div>
-                            <input type="number" step="0.01" onChange={e=>setFd({...fd, altura:e.target.value})} className="w-full border-2 border-white shadow-sm p-4 rounded-xl text-center font-black text-xl mb-2"/>
+                        <div className={`p-4 rounded-2xl border-2 transition-all ${alarmaAltura ? 'bg-red-50 border-red-500' : 'bg-gray-50 border-gray-100'}`}>
+                            <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${alarmaAltura ? 'text-red-700' : 'text-gray-600'}`}>Altura Membrana Interna (m)</label><Fantasma valor={prevData?.altura_interna_m} /></div>
+                            <input type="number" step="0.01" onChange={e=>setFd({...fd, altura:e.target.value})} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-1 ${alarmaAltura ? 'bg-red-100 border-red-500 text-red-900' : 'border-white shadow-sm bg-white'}`}/>
+                            {alarmaAltura && <p className="text-red-600 text-[10px] font-black mb-3 text-center animate-pulse tracking-widest">⚠️ ALARMA: Nivel Alto</p>}
                             <MultiFotoUploader idCampo="altura" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Cinta Métrica / Lona" />
                         </div>
                         
-                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                            <div className="flex justify-between items-center mb-2"><label className="text-[10px] text-gray-600 font-black uppercase">Presión Intermembranas mbar</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div>
-                            <input type="number" step="0.1" onChange={e=>setFd({...fd, presion:e.target.value})} className="w-full border-2 border-white shadow-sm p-4 rounded-xl text-center font-black text-xl mb-2"/>
+                        <div className={`p-4 rounded-2xl border-2 transition-all ${alarmaPresion ? 'bg-red-50 border-red-500' : 'bg-gray-50 border-gray-100'}`}>
+                            <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${alarmaPresion ? 'text-red-700' : 'text-gray-600'}`}>Presión Intermembranas mbar</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div>
+                            <input type="number" step="0.1" onChange={e=>setFd({...fd, presion:e.target.value})} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-1 ${alarmaPresion ? 'bg-red-100 border-red-500 text-red-900' : 'border-white shadow-sm bg-white'}`}/>
+                            {alarmaPresion && <p className="text-red-600 text-[10px] font-black mb-3 text-center animate-pulse tracking-widest">⚠️ ALARMA: Sobrepresión</p>}
                             <MultiFotoUploader idCampo="presion" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Manómetro en U" />
                         </div>
                         
-                        <div className={`p-4 rounded-2xl border-2 transition-all ${lel > 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-100'}`}>
-                            <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${lel > 0 ? 'text-red-700' : 'text-gray-600'}`}>Lectura LEL Máxima (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
-                            <input type="number" step="0.1" onChange={e=>setFd({...fd, lel:e.target.value})} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-2 ${lel > 0 ? 'bg-red-100 border-red-400 text-red-700' : 'border-white bg-white shadow-sm'}`}/>
+                        <div className={`p-4 rounded-2xl border-2 transition-all ${alarmaLel ? 'bg-red-50 border-red-500' : 'bg-gray-50 border-gray-100'}`}>
+                            <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${alarmaLel ? 'text-red-700' : 'text-gray-600'}`}>Lectura LEL Máxima (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
+                            <input type="number" step="0.1" min="0" onKeyDown={(e) => e.key === '-' && e.preventDefault()} onChange={e=>{const val = Math.max(0, parseFloat(e.target.value) || 0); setFd({...fd, lel:e.target.value === '' ? '' : val})}} value={fd.lel} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-1 ${alarmaLel ? 'bg-red-100 border-red-500 text-red-900' : 'border-white shadow-sm bg-white'}`}/>
+                            {alarmaLel && <p className="text-red-600 text-[10px] font-black mb-3 text-center animate-pulse tracking-widest">⚠️ ALARMA: Fuga LEL Detectada</p>}
                             <MultiFotoUploader idCampo="lel" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Pantalla Detector LEL" />
                         </div>
                     </div>
 
+                    {/* PC 3 */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-3: Guarda Hidráulica</h3>
                         <div className="flex justify-between items-center mb-2"><label className="text-xs text-gray-500 font-bold uppercase">Nivel en Visor</label><Fantasma valor={prevData?.nivel_guarda_hidraulica} /></div>
@@ -457,6 +428,7 @@
                         <MultiFotoUploader idCampo="guarda" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Visor de Nivel" />
                     </div>
 
+                    {/* PC 4 */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest border-b pb-2">PC-4: Inyeccion de Aire</h3>
                         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -467,6 +439,7 @@
                         <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores / Damper" />
                     </div>
 
+                    {/* PC 5 */}
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-5: Linea de Biogas</h3>
                         <label className={`flex items-center space-x-3 p-4 rounded-2xl border-2 mb-4 transition-all ${fd.agua_trampa ? 'bg-gray-50 border-gray-100' : 'bg-red-50 border-red-300 shadow-inner'}`}><input type="checkbox" defaultChecked onChange={e=>setFd({...fd, agua_trampa: e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg" /><span className={`text-xs font-black uppercase ${fd.agua_trampa ? 'text-gray-700' : 'text-red-700'}`}>Agua constante OK</span></label>
@@ -474,13 +447,29 @@
                         <MultiFotoUploader idCampo="trampa" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Trampa y Válvula" />
                     </div>
 
-                    <div className="bg-white p-5 rounded-3xl shadow-md border border-gray-100">
-                         <label className="text-[10px] text-gray-500 font-black uppercase mb-2 block tracking-widest">Observaciones Generales</label>
-                         {observationMissing && <p className="text-[10px] text-red-600 font-black mb-2 animate-pulse uppercase">⚠️ Registro de observación obligatorio</p>}
-                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border-2 p-4 rounded-2xl text-sm font-medium transition-all ${observationMissing ? 'bg-red-50 border-red-300 shadow-inner' : 'bg-gray-50 border-gray-50'}`} rows="4" placeholder="Detalle anomalías registradas..."></textarea>
+                    {/* PC 6: NUEVO - GABINETE ELÉCTRICO */}
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-6: Gabinete de Control Eléctrico</h3>
+                        <div className="mb-2"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Estado del Tablero</label>
+                            <select onChange={e=>setFd({...fd, gabinete:e.target.value})} className={`w-full border-2 p-4 rounded-xl font-black text-xs ${fd.gabinete !== 'Operativo (Luces normales, cerrado)' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-100'}`}>
+                                <option>Operativo (Luces normales, cerrado)</option>
+                                <option>Falla: Luz de alarma encendida en panel</option>
+                                <option>Falla: Selector en manual o desconectado</option>
+                                <option>Falla: Daño físico o puerta abierta</option>
+                                <option>Falla: Alta temperatura u olor a quemado</option>
+                            </select>
+                        </div>
+                        <MultiFotoUploader idCampo="gabinete" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos del Panel / Instrumentos" />
                     </div>
 
-                    {!fotosCompletas && <p className="text-center text-[10px] text-red-600 font-black uppercase tracking-tighter pt-4 animate-bounce">Mínimo 1 fotografía por cada PC para finalizar</p>}
+                    <div className="bg-white p-5 rounded-3xl shadow-md border border-gray-100">
+                         <label className="text-[10px] text-gray-500 font-black uppercase mb-2 block tracking-widest">Observaciones Generales</label>
+                         {observationMissing && <p className="text-[10px] text-red-600 font-black mb-2 animate-pulse uppercase">⚠️ Registro de observación obligatorio (Alarmas o Fallas activas)</p>}
+                         <textarea onChange={e=>setFd({...fd, observaciones:e.target.value})} className={`w-full border-2 p-4 rounded-2xl text-sm font-medium transition-all ${observationMissing ? 'bg-red-50 border-red-400 shadow-inner' : 'bg-gray-50 border-gray-50'}`} rows="4" placeholder="Justifique alarmas LEL, niveles críticos, daños o fallas eléctricas..."></textarea>
+                    </div>
+
+                    {!fotosCompletas && <p className="text-center text-[10px] text-red-600 font-black uppercase tracking-tighter pt-4 animate-bounce">Mínimo 1 fotografía por cada PC (Son 8 Puntos) para finalizar</p>}
+                    
                     <button onClick={() => onTerminado(fd, fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-6 rounded-3xl shadow-2xl mt-6 uppercase tracking-[0.2em] transition-all transform active:scale-95 ${canSubmit ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}>Finalizar Gasómetro</button>
                 </div>
             );
@@ -560,11 +549,12 @@
                             soplador_1_estado: datosGasometroTemp.soplador_1, soplador_2_estado: datosGasometroTemp.soplador_2, 
                             sopladores_condicion_mecanica: datosGasometroTemp.condicion_sopladores, 
                             flujo_agua_trampa: datosGasometroTemp.agua_trampa, estado_valvula_corte: datosGasometroTemp.valvula_corte,
+                            estado_gabinete_electrico: datosGasometroTemp.gabinete,
                             observaciones: datosGasometroTemp.observaciones,
                             foto_anclaje: fotosGasometroTemp.anclaje, foto_altura: fotosGasometroTemp.altura,
                             foto_presion: fotosGasometroTemp.presion, foto_lel: fotosGasometroTemp.lel,
                             foto_guarda: fotosGasometroTemp.guarda, foto_sopladores: fotosGasometroTemp.sopladores,
-                            foto_trampa: fotosGasometroTemp.trampa
+                            foto_trampa: fotosGasometroTemp.trampa, foto_gabinete: fotosGasometroTemp.gabinete
                         }]);
                     }
                     setIsSavingDb(false);
@@ -582,7 +572,7 @@
                             <div className="bg-[#2a2a2a] p-10 rounded-[3rem] border border-zinc-700 shadow-2xl">
                                 <div className="text-7xl mb-8">✅</div>
                                 <h2 className="text-3xl font-black mb-4 tracking-tighter">Ronda Completada</h2>
-                                <p className="text-zinc-400 mb-10 font-medium">Trazabilidad y evidencia fotográfica aseguradas en el servidor central.</p>
+                                <p className="text-zinc-400 mb-10 font-medium">Trazabilidad asegurada en el servidor central.</p>
                                 <button onClick={() => window.location.reload()} className="w-full bg-amber-500 text-zinc-900 font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl transform active:scale-95 transition-all">Nuevo Turno</button>
                             </div>
                         </div>
