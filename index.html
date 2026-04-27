@@ -166,7 +166,7 @@
                         <h3 className="text-sm font-black text-yellow-800 uppercase mb-3">Novedades Reportadas</h3>
                         <ul className="text-sm text-yellow-900 space-y-2 list-disc pl-4 font-medium"><li>Sin novedades críticas registradas en el turno anterior.</li></ul>
                     </div>
-                    <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest">Entendido</button>
+                    <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest hover:bg-emerald-700 transition-colors">Entendido</button>
                 </div>
             );
         }
@@ -178,7 +178,6 @@
                     <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Ingreso SCADA (WinCC)</h2></div>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-6">
                         
-                        {/* 1. Digestor */}
                         <div>
                             <h4 className="text-xs font-black text-blue-600 uppercase mb-3 border-b pb-1">1. Digestor</h4>
                             <div className="grid grid-cols-3 gap-3">
@@ -188,7 +187,6 @@
                             </div>
                         </div>
 
-                        {/* 2. Gasómetro */}
                         <div>
                             <h4 className="text-xs font-black text-amber-600 uppercase mb-3 border-b pb-1">2. Gasometro</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -197,7 +195,6 @@
                             </div>
                         </div>
 
-                        {/* 3. Compresores y Consumos (RESTAURADO) */}
                         <div>
                             <h4 className="text-xs font-black text-emerald-600 uppercase mb-3 border-b pb-1">3. Compresores y Consumos</h4>
                             <div className="grid grid-cols-2 gap-3 mb-3">
@@ -211,7 +208,7 @@
                         </div>
 
                     </div>
-                    <button onClick={() => onComplete(scada)} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-8 uppercase tracking-widest">Confirmar Datos SCADA</button>
+                    <button onClick={() => onComplete(scada)} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-8 uppercase tracking-widest hover:bg-emerald-700 transition-colors">Confirmar Datos SCADA</button>
                 </div>
             );
         }
@@ -222,13 +219,43 @@
             return (
                 <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans">
                     <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg"><h2 className="text-xl font-bold">Seguridad y EPP</h2></div>
+                    
                     <div className="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
-                        <h3 className="text-xs font-black text-gray-800 uppercase mb-4 border-b pb-2">Implementos de Seguridad</h3>
-                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100"><input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-sm font-medium">Casco, Lentes y Zapatos</span></label>
-                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100"><input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-sm font-medium">Detector de Gases Personal (ON)</span></label>
-                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100"><input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> <span className="text-sm font-medium">Radio Intrinsecamente Segura</span></label>
+                        <h3 className="text-xs font-black text-gray-800 uppercase mb-4 border-b pb-2">Implementos y Equipos Obligatorios</h3>
+                        
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
+                            <input type="checkbox" onChange={e=>setC({...c, epp1:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
+                            <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">EPP:</b> Casco, lentes, guantes y zapatos de seguridad</span>
+                        </label>
+                        
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
+                            <input type="checkbox" onChange={e=>setC({...c, epp2:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
+                            <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Equipos:</b> Detector multigas CH4, CO2, O2 y H2S</span>
+                        </label>
+                        
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
+                            <input type="checkbox" onChange={e=>setC({...c, epp3:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
+                            <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Protección:</b> Máscara para gases tóxicos</span>
+                        </label>
+
+                        <label className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
+                            <input type="checkbox" onChange={e=>setC({...c, epp4:e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg"/> 
+                            <span className="text-xs text-gray-700 leading-tight"><b className="text-gray-900 block">Artículos ATEX:</b> Tablet o Smartphone y Linterna certificados</span>
+                        </label>
                     </div>
-                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest transition-all ${listo ? 'bg-emerald-600' : 'bg-gray-400 opacity-50'}`}>Continuar</button>
+                    
+                    <div className="bg-red-50 rounded-2xl shadow-sm border border-red-200 p-5">
+                        <h3 className="text-xs font-black text-red-800 uppercase mb-3 border-b border-red-200 pb-2">Precaución Riesgo ATEX</h3>
+                        <div className="space-y-2">
+                            <label className="flex items-center space-x-3 p-2 bg-white rounded-lg border border-red-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, ax1:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-[11px] font-bold text-red-900">Z1: 1.5m de Guarda Hidráulica</span></label>
+                            <label className="flex items-center space-x-3 p-2 bg-white rounded-lg border border-red-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, ax2:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-[11px] font-bold text-red-900">Z1: 1.0m de Válvulas y Purgas</span></label>
+                            <label className="flex items-center space-x-3 p-2 bg-white rounded-lg border border-red-100 cursor-pointer"><input type="checkbox" onChange={e=>setC({...c, ax3:e.target.checked})} className="h-5 w-5 text-red-600"/> <span className="text-[11px] font-bold text-red-900">Z2: 0.35m de Bridas/Inst.</span></label>
+                        </div>
+                    </div>
+                    
+                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest transition-all ${listo ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-400 opacity-50 cursor-not-allowed'}`}>
+                        CONTINUAR
+                    </button>
                 </div>
             );
         }
@@ -274,7 +301,7 @@
                     <div className="space-y-3">
                         <button onClick={() => setHubState({...hubState, subvistaActiva: 'resumen'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${hubState.resumenOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{hubState.resumenOk ? '✅' : '📋'}</span><span className={`font-black text-sm uppercase ${hubState.resumenOk ? 'text-emerald-800' : 'text-gray-700'}`}>Turno Anterior</span></div></button>
                         <button onClick={() => setHubState({...hubState, subvistaActiva: 'scada'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${scadaOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{scadaOk ? '✅' : '🖥️'}</span><span className={`font-black text-sm uppercase ${scadaOk ? 'text-emerald-800' : 'text-gray-700'}`}>Datos SCADA</span></div></button>
-                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'riesgos'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${hubState.riesgosOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{hubState.riesgosOk ? '✅' : '🛑'}</span><span className={`font-black text-sm uppercase ${hubState.riesgosOk ? 'text-emerald-800' : 'text-gray-700'}`}>Riesgos y EPP</span></div></button>
+                        <button onClick={() => setHubState({...hubState, subvistaActiva: 'riesgos'})} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${hubState.riesgosOk ? 'bg-emerald-50 border-emerald-500 shadow-inner' : 'bg-white border-gray-100 shadow-sm'}`}><div className="flex items-center space-x-4"><span className="text-2xl">{hubState.riesgosOk ? '✅' : '🛑'}</span><span className={`font-black text-sm uppercase ${hubState.riesgosOk ? 'text-emerald-800' : 'text-gray-700'}`}>Seguridad y EPP</span></div></button>
                     </div>
                     <div className="pt-6">
                         <button onClick={() => avanzarAInstalaciones(turnoDetectado, hubState.scadaData)} disabled={!listoParaRonda} className={`w-full font-black py-6 rounded-3xl shadow-2xl text-lg uppercase tracking-[0.2em] transition-all transform active:scale-95 ${listoParaRonda ? 'bg-amber-500 text-zinc-900' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>COMENZAR RONDA</button>
@@ -317,7 +344,7 @@
         }
 
         // ==========================================
-        // FORMULARIO GASÓMETRO (MULTI-FOTO)
+        // FORMULARIO GASÓMETRO
         // ==========================================
         function FormularioGasometro({ turnoId, prevData, listaFallas, listaEstadosSopladores, onTerminado }) {
             const [fd, setFd] = useState({ 
@@ -326,7 +353,6 @@
                 agua_trampa: true, valvula_corte: 'Abierta (Candado puesto)', observaciones: '' 
             });
             
-            // Estado para múltiples fotos (arrays en lugar de strings)
             const [fotos, setFotos] = useState({ 
                 anclaje: [], altura: [], presion: [], lel: [], guarda: [], sopladores: [], trampa: [] 
             });
@@ -341,7 +367,6 @@
             const requiresObservation = lel > 0 || fd.guarda !== 'Nivel Normal' || fd.anclajes !== 'Optimo' || fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' || !fd.agua_trampa || fd.valvula_corte === 'Sin candado de seguridad';
             const observationMissing = requiresObservation && fd.observaciones.trim() === '';
             
-            // Validacion: Minimo 1 foto en cada array
             const fotosCompletas = Object.values(fotos).every(arr => arr && arr.length > 0);
             const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
             const canSubmit = fotosCompletas && datosCompletos && !isCritical && !observationMissing;
@@ -407,19 +432,19 @@
                         <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                             <div className="flex justify-between items-center mb-2"><label className="text-[10px] text-gray-600 font-black uppercase">Altura Membrana Interna (m)</label><Fantasma valor={prevData?.altura_interna_m} /></div>
                             <input type="number" step="0.01" onChange={e=>setFd({...fd, altura:e.target.value})} className="w-full border-2 border-white shadow-sm p-4 rounded-xl text-center font-black text-xl mb-2"/>
-                            <MultiFotoUploader idCampo="altura" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Cinta Métrica" />
+                            <MultiFotoUploader idCampo="altura" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Cinta Métrica / Lona" />
                         </div>
                         
                         <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                             <div className="flex justify-between items-center mb-2"><label className="text-[10px] text-gray-600 font-black uppercase">Presión Intermembranas mbar</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div>
                             <input type="number" step="0.1" onChange={e=>setFd({...fd, presion:e.target.value})} className="w-full border-2 border-white shadow-sm p-4 rounded-xl text-center font-black text-xl mb-2"/>
-                            <MultiFotoUploader idCampo="presion" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Manómetro" />
+                            <MultiFotoUploader idCampo="presion" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Manómetro en U" />
                         </div>
                         
                         <div className={`p-4 rounded-2xl border-2 transition-all ${lel > 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-100'}`}>
                             <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${lel > 0 ? 'text-red-700' : 'text-gray-600'}`}>Lectura LEL Máxima (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
                             <input type="number" step="0.1" onChange={e=>setFd({...fd, lel:e.target.value})} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-2 ${lel > 0 ? 'bg-red-100 border-red-400 text-red-700' : 'border-white bg-white shadow-sm'}`}/>
-                            <MultiFotoUploader idCampo="lel" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Pantalla LEL" />
+                            <MultiFotoUploader idCampo="lel" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Pantalla Detector LEL" />
                         </div>
                     </div>
 
@@ -439,14 +464,14 @@
                             <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 2</label><select onChange={e=>setFd({...fd, soplador_2: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
                         </div>
                         <div className="mb-4"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Condición Mecánica</label><select onChange={e=>setFd({...fd, condicion_sopladores: e.target.value})} className={`w-full border-2 p-4 rounded-xl text-xs font-black transition-colors ${fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-50'}`}>{estadosAUsar.map(estado => <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>)}</select></div>
-                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores/Damper" />
+                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores / Damper" />
                     </div>
 
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-5: Linea de Biogas</h3>
                         <label className={`flex items-center space-x-3 p-4 rounded-2xl border-2 mb-4 transition-all ${fd.agua_trampa ? 'bg-gray-50 border-gray-100' : 'bg-red-50 border-red-300 shadow-inner'}`}><input type="checkbox" defaultChecked onChange={e=>setFd({...fd, agua_trampa: e.target.checked})} className="h-6 w-6 text-blue-600 rounded-lg" /><span className={`text-xs font-black uppercase ${fd.agua_trampa ? 'text-gray-700' : 'text-red-700'}`}>Agua constante OK</span></label>
                         <div className="mb-2"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Valvula de Corte</label><select onChange={e=>setFd({...fd, valvula_corte:e.target.value})} className={`w-full border-2 p-4 rounded-xl font-black text-xs ${fd.valvula_corte === 'Sin candado de seguridad' ? 'bg-red-100 border-red-400 text-red-800' : 'bg-gray-50 border-gray-50'}`}><option>Abierta (Candado puesto)</option><option>Cerrada (Candado puesto)</option><option>Sin candado de seguridad</option></select></div>
-                        <MultiFotoUploader idCampo="trampa" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Trampa de Condensados" />
+                        <MultiFotoUploader idCampo="trampa" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Trampa y Válvula" />
                     </div>
 
                     <div className="bg-white p-5 rounded-3xl shadow-md border border-gray-100">
@@ -470,10 +495,8 @@
             const [pantallaActiva, setPantallaActiva] = useState('hub');
             const [turnoContexto, setTurnoContexto] = useState({ shift: '', scada: null, turnoIdBd: null });
             const [areasStatus, setAreasStatus] = useState({ gasometro: false });
-            
             const [datosGasometroTemp, setDatosGasometroTemp] = useState(null);
             const [fotosGasometroTemp, setFotosGasometroTemp] = useState(null);
-            
             const [isSavingDb, setIsSavingDb] = useState(false);
             const [valoresAnteriores, setValoresAnteriores] = useState({ turno: null, gasometro: null });
             const [listaFallas, setListaFallas] = useState([]);
@@ -559,7 +582,7 @@
                             <div className="bg-[#2a2a2a] p-10 rounded-[3rem] border border-zinc-700 shadow-2xl">
                                 <div className="text-7xl mb-8">✅</div>
                                 <h2 className="text-3xl font-black mb-4 tracking-tighter">Ronda Completada</h2>
-                                <p className="text-zinc-400 mb-10 font-medium">Trazabilidad y evidencias fotográficas aseguradas en el servidor central.</p>
+                                <p className="text-zinc-400 mb-10 font-medium">Trazabilidad y evidencia fotográfica aseguradas en el servidor central.</p>
                                 <button onClick={() => window.location.reload()} className="w-full bg-amber-500 text-zinc-900 font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl transform active:scale-95 transition-all">Nuevo Turno</button>
                             </div>
                         </div>
