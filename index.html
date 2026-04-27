@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RondaSync - PTAS Talagante</title>
+    <title>RondaSync - PTAR Talagante</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -120,7 +120,7 @@
                     <div className="bg-[#2a2a2a] w-full max-w-md rounded-2xl p-8 shadow-2xl border border-zinc-700">
                         <div className="flex items-center space-x-4 mb-8">
                             <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center p-2 shadow-lg"><span className="font-bold text-zinc-900 text-xl">RS</span></div>
-                            <div><h1 className="text-2xl font-bold tracking-tight">RondaSync</h1><p className="text-xs text-zinc-400 uppercase tracking-widest">PTAS Talagante</p></div>
+                            <div><h1 className="text-2xl font-bold tracking-tight">RondaSync</h1><p className="text-xs text-zinc-400 uppercase tracking-widest">PTAR Talagante</p></div>
                         </div>
                         <h2 className="text-3xl font-bold mb-6">Bienvenido</h2>
                         <form onSubmit={manejarLogin} className="space-y-5">
@@ -148,7 +148,7 @@
                         .from('registro_turnos')
                         .select('*, inspeccion_gasometro(*)')
                         .order('created_at', { ascending: false })
-                        .limit(14); // Carga las ultimas 14 rondas
+                        .limit(10);
                     
                     if (!error && turnos) {
                         setData(turnos);
@@ -189,21 +189,15 @@
                 return () => { if (chartInstance.current) chartInstance.current.destroy(); }
             }, [data, loading]);
 
-            // Calculo de KPIs de Gestión
             const totalRondas = data.length;
             const fallasLel = data.filter(t => t.inspeccion_gasometro?.[0]?.lectura_lel_porcentaje > 0).length;
             
-            // Calcular tiempo promedio de ronda
             const duracionesValidas = data.map(t => {
-                if(t.hora_inicio && t.created_at) {
-                    return (new Date(t.created_at) - new Date(t.hora_inicio)) / 60000; // a minutos
-                }
+                if(t.hora_inicio && t.created_at) return (new Date(t.created_at) - new Date(t.hora_inicio)) / 60000;
                 return 0;
             }).filter(d => d > 0);
             
-            const avgTime = duracionesValidas.length > 0 
-                ? Math.round(duracionesValidas.reduce((a,b)=>a+b,0) / duracionesValidas.length) 
-                : '--';
+            const avgTime = duracionesValidas.length > 0 ? Math.round(duracionesValidas.reduce((a,b)=>a+b,0) / duracionesValidas.length) : '--';
 
             return (
                 <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-100 pb-20">
@@ -216,7 +210,6 @@
                         <div className="text-center py-20 text-gray-500 font-bold animate-pulse">Cargando Historial...</div>
                     ) : (
                         <>
-                            {/* Tarjetas KPI Mantenimiento & Gestión */}
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
                                     <p className="text-[9px] text-gray-500 font-black uppercase mb-1">Rondas Hist.</p>
@@ -237,20 +230,16 @@
                                 <canvas ref={chartRef} id="tendenciasChart" className="w-full h-48"></canvas>
                             </div>
 
-                            {/* Bitácora de Rondas Detallada */}
                             <div className="space-y-4">
                                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Bitácora de Inspecciones</h3>
                                 {data.map((turno) => {
                                     const gas = turno.inspeccion_gasometro?.[0];
-                                    
-                                    // Calculo de duración individual
                                     let duracionStr = '--';
                                     if(turno.hora_inicio && turno.created_at) {
                                         const mins = Math.round((new Date(turno.created_at) - new Date(turno.hora_inicio)) / 60000);
                                         duracionStr = `${mins} min`;
                                     }
 
-                                    // Extraer tags de fallas
                                     const tags = [];
                                     if (gas?.estado_anclajes && gas.estado_anclajes !== 'Optimo') tags.push('Anclajes');
                                     if (gas?.lectura_lel_porcentaje > 0) tags.push(`LEL ${gas.lectura_lel_porcentaje}%`);
@@ -272,7 +261,6 @@
                                                 </div>
                                             </div>
                                             
-                                            {/* Tags de Fallas */}
                                             {tags.length > 0 ? (
                                                 <div className="flex flex-wrap gap-1 mb-2">
                                                     {tags.map((t, i) => <span key={i} className="bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">{t}</span>)}
@@ -281,7 +269,6 @@
                                                 <div className="mb-2"><span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded text-[9px] font-bold uppercase">✓ Óptimo</span></div>
                                             )}
 
-                                            {/* Observaciones */}
                                             <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
                                                 <p className="text-[10px] text-gray-400 font-black uppercase mb-1">Observaciones</p>
                                                 <p className="text-xs text-gray-700 font-medium italic">{gas?.observaciones || 'Sin registro de observaciones.'}</p>
@@ -320,8 +307,8 @@
             if (gasometro?.lectura_lel_porcentaje > 0) anomalias.push(`LEL Detectado: ${gasometro.lectura_lel_porcentaje}%`);
             if (gasometro?.nivel_guarda_hidraulica && gasometro.nivel_guarda_hidraulica !== 'Nivel Normal') anomalias.push(`Guarda Hidráulica: ${gasometro.nivel_guarda_hidraulica}`);
             if (gasometro?.sopladores_condicion_mecanica && gasometro.sopladores_condicion_mecanica !== 'Operación Normal (Sin ruidos/vibración)') anomalias.push(`Sopladores: ${gasometro.sopladores_condicion_mecanica}`);
-            if (gasometro?.flujo_agua_trampa === false) anomalias.push(`Trampa: Sin flujo de agua (Pérdida de sello)`);
-            if (gasometro?.estado_valvula_corte === 'Sin candado de seguridad') anomalias.push(`Válvula Corte: Sin candado LOTO`);
+            if (gasometro?.flujo_agua_trampa === false) anomalias.push(`Trampa: Sin flujo de agua`);
+            if (gasometro?.estado_valvula_corte === 'Sin candado de seguridad') anomalias.push(`Válvula Corte: Sin candado`);
             if (gasometro?.estado_gabinete_electrico && !gasometro.estado_gabinete_electrico.includes('Operativo')) anomalias.push(`Gabinete: ${gasometro.estado_gabinete_electrico}`);
 
             return (
@@ -336,7 +323,23 @@
                         {anomalias.length > 0 && (
                             <div className="bg-red-50 rounded-2xl p-4 shadow-sm border border-red-200"><h3 className="text-[10px] font-black text-red-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">⚠️</span> Atención Requerida (Heredado)</h3><ul className="space-y-2">{anomalias.map((anom, idx) => (<li key={idx} className="text-xs text-red-700 font-bold bg-white p-2 rounded border border-red-100">• {anom}</li>))}</ul></div>
                         )}
-                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"><h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Niveles SCADA Finales</h3><div className="grid grid-cols-2 gap-3 text-xs"><div><span className="text-gray-500 block text-[9px] uppercase">Nivel Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_nivel_cm || '-'} cm</span></div><div><span className="text-gray-500 block text-[9px] uppercase">Nivel Gas.</span><span className="font-bold text-gray-800">{turno.scada_nivel_gasometro || '-'} %</span></div><div><span className="text-gray-500 block text-[9px] uppercase">Pres. Gas.</span><span className="font-bold text-gray-800">{turno.scada_presion_mbar || '-'} mbar</span></div></div></div>
+                        
+                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">SCADA Inicial del Turno Saliente (Ref. de 12hrs)</h3>
+                            <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-xs">
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Nivel Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_nivel_cm || '-'} cm</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Pres. Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_presion_mbar || '-'} mbar</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Temp Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_temp_c || '-'} °C</span></div>
+                                
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Nivel Gas.</span><span className="font-bold text-gray-800">{turno.scada_nivel_gasometro || '-'} %</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Pres. Gas.</span><span className="font-bold text-gray-800">{turno.scada_presion_mbar || '-'} mb</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Flujo Comp.</span><span className="font-bold text-gray-800">{turno.scada_flujo_biogas_nm3h || '-'} m³/h</span></div>
+                                
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Pres. Imp.</span><span className="font-bold text-gray-800">{turno.scada_comp_presion_imp_mbar || '-'} mb</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Flujo Cald.</span><span className="font-bold text-gray-800">{turno.scada_cald_flujo_m3h || '-'} </span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Flujo Ant.</span><span className="font-bold text-gray-800">{turno.scada_ant_flujo_m3h || '-'} </span></div>
+                            </div>
+                        </div>
                     </div>
                     <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-3xl shadow-xl mt-8 uppercase tracking-widest hover:bg-emerald-700 transition-all transform active:scale-95">Tomar Control del Turno</button>
                 </div>
@@ -683,13 +686,13 @@
                     </div>
 
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
-                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest border-b pb-2">PC-4: Aire Intermembranas</h3>
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest border-b pb-2">PC-4: Inyeccion de Aire</h3>
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 1</label><select onChange={e=>setFd({...fd, soplador_1: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
                             <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 2</label><select onChange={e=>setFd({...fd, soplador_2: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
                         </div>
                         <div className="mb-4"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Condición Mecánica</label><select onChange={e=>setFd({...fd, condicion_sopladores: e.target.value})} className={`w-full border-2 p-4 rounded-xl text-xs font-black transition-colors ${fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-50'}`}>{estadosAUsar.map(estado => <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>)}</select></div>
-                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores/Damper" />
+                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores / Damper" />
                     </div>
 
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
@@ -740,12 +743,10 @@
 
             const cargarMemoriaOperativa = async () => {
                 try {
-                    const { data: turnos, error: err1 } = await supabaseClient.from('registro_turnos').select('*').order('created_at', { ascending: false }).limit(1);
-                    if (err1) console.error("Supabase Error Turnos:", err1);
-                    const { data: gasometros, error: err2 } = await supabaseClient.from('inspeccion_gasometro').select('*').order('created_at', { ascending: false }).limit(1);
-                    if (err2) console.error("Supabase Error Gasometro:", err2);
-                    setValoresAnteriores({ turno: turnos && turnos.length > 0 ? turnos[0] : null, gasometro: gasometros && gasometros.length > 0 ? gasometros[0] : null });
-                } catch (error) { console.error("Error crítico de red:", error); }
+                    const { data: turnos } = await supabaseClient.from('registro_turnos').select('*').order('created_at', { ascending: false }).limit(1);
+                    const { data: gasometros } = await supabaseClient.from('inspeccion_gasometro').select('*').order('created_at', { ascending: false }).limit(1);
+                    setValoresAnteriores({ turno: turnos?.[0] || null, gasometro: gasometros?.[0] || null });
+                } catch (error) { console.log("Offline"); }
             };
 
             const cargarCatalogos = async () => {
@@ -784,26 +785,16 @@
             const manejarFinalizacionTotal = async () => {
                 setIsSavingDb(true);
                 try {
-                    // Extraemos la hora exacta de inicio del ID temporal
                     const horaInicioTimestamp = parseInt(turnoContexto.turnoIdBd.split('-')[1]);
                     const horaInicioObj = new Date(horaInicioTimestamp);
 
                     const { data: turnoData, error: errT } = await supabaseClient.from('registro_turnos').insert([{
-                        operador_nombre: user.email, 
-                        tipo_turno: turnoContexto.shift,
-                        hora_inicio: horaInicioObj,
-                        scada_nivel_gasometro: turnoContexto.scada.gas_nivel || null, 
-                        scada_presion_mbar: turnoContexto.scada.gas_presion || null,
-                        scada_flujo_biogas_nm3h: turnoContexto.scada.comp_flujo || null, 
-                        scada_dig_nivel_cm: turnoContexto.scada.dig_nivel || null,
-                        scada_dig_presion_mbar: turnoContexto.scada.dig_presion || null, 
-                        scada_dig_temp_c: turnoContexto.scada.dig_temp || null,
-                        scada_comp_presion_imp_mbar: turnoContexto.scada.comp_pres_imp || null, 
-                        scada_cald_flujo_m3h: turnoContexto.scada.cald_flujo || null,
-                        scada_ant_flujo_m3h: turnoContexto.scada.ant_flujo || null, 
-                        atex_confirmado: true, 
-                        estado_ronda: 'Completada', 
-                        hora_fin: new Date()
+                        operador_nombre: user.email, tipo_turno: turnoContexto.shift, hora_inicio: horaInicioObj,
+                        scada_nivel_gasometro: turnoContexto.scada.gas_nivel || null, scada_presion_mbar: turnoContexto.scada.gas_presion || null,
+                        scada_flujo_biogas_nm3h: turnoContexto.scada.comp_flujo || null, scada_dig_nivel_cm: turnoContexto.scada.dig_nivel || null,
+                        scada_dig_presion_mbar: turnoContexto.scada.dig_presion || null, scada_dig_temp_c: turnoContexto.scada.dig_temp || null,
+                        scada_comp_presion_imp_mbar: turnoContexto.scada.comp_pres_imp || null, scada_cald_flujo_m3h: turnoContexto.scada.cald_flujo || null,
+                        scada_ant_flujo_m3h: turnoContexto.scada.ant_flujo || null, atex_confirmado: true, estado_ronda: 'Completada', hora_fin: new Date()
                     }]).select();
 
                     if (!errT && areasStatus.gasometro) {
