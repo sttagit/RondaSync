@@ -158,7 +158,7 @@
         }
 
         // ==========================================
-        // LOGIN
+        // LOGIN CORPORATIVO
         // ==========================================
         function PantallaLogin({ onLogin }) {
             const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
@@ -190,6 +190,85 @@
                             <button type="submit" disabled={loading} className="w-full bg-aguas-blue text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg hover:bg-aguas-dark active:scale-95 transition-all mt-6 disabled:opacity-60">{loading ? 'Verificando...' : 'Iniciar Sesión'}</button>
                         </form>
                     </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // VISTA SCADA Y DASHBOARD
+        // ==========================================
+        function VistaScada({ datosGuardados, prevData, onSave, onBack }) {
+            const isLocked = !!datosGuardados; 
+            const [scada, setScada] = useState({ dig_nivel: '', dig_presion: '', dig_temp: '', gas_nivel: '', gas_presion: '', comp_flujo: '', comp_pres_imp: '', cald_flujo: '', ant_flujo: '' });
+
+            if (isLocked) {
+                return (
+                    <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-20 font-sans fade-in">
+                        <div className="bg-aguas-blue p-5 rounded-2xl text-white shadow-xl flex justify-between items-center"><h2 className="text-lg font-black uppercase">SCADA Inicial</h2><button onClick={onBack} className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Volver</button></div>
+                        <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-2xl flex items-center justify-between"><p className="text-[10px] font-black text-aguas-blue uppercase">Registrado por: {datosGuardados.operador_nombre.split('@')[0]}</p><span className="text-3xl">🔒</span></div>
+                        <div className="bg-white rounded-3xl shadow-md border p-5 space-y-6">
+                            <div><h4 className="text-[10px] font-black text-aguas-blue uppercase mb-3 border-b pb-1">1. Digestor</h4><div className="grid grid-cols-3 gap-3"><div className="bg-gray-50 p-3 rounded-xl text-center"><p className="text-[9px] text-gray-400 font-black uppercase">Nivel</p><p className="font-black text-gray-800">{datosGuardados.scada_dig_nivel_cm} cm</p></div><div className="bg-gray-50 p-3 rounded-xl text-center"><p className="text-[9px] text-gray-400 font-black uppercase">Presión</p><p className="font-black text-gray-800">{datosGuardados.scada_dig_presion_mbar} mb</p></div><div className="bg-gray-50 p-3 rounded-xl text-center"><p className="text-[9px] text-gray-400 font-black uppercase">Temp</p><p className="font-black text-gray-800">{datosGuardados.scada_dig_temp_c} °C</p></div></div></div>
+                            <div><h4 className="text-[10px] font-black text-aguas-yellow uppercase mb-3 border-b pb-1">2. Gasometro</h4><div className="grid grid-cols-2 gap-3"><div className="bg-amber-50 p-3 rounded-xl text-center"><p className="text-[9px] text-amber-600 font-black uppercase">Nivel</p><p className="font-black text-amber-900 text-lg">{datosGuardados.scada_nivel_gasometro} %</p></div><div className="bg-amber-50 p-3 rounded-xl text-center"><p className="text-[9px] text-amber-600 font-black uppercase">Presión</p><p className="font-black text-amber-900 text-lg">{datosGuardados.scada_presion_mbar} mb</p></div></div></div>
+                            <div><h4 className="text-[10px] font-black text-aguas-green uppercase mb-3 border-b pb-1">3. Compresores/Calderas</h4><div className="grid grid-cols-2 gap-3 mb-3"><div className="bg-gray-50 p-3 rounded-xl text-center"><p className="text-[9px] text-gray-400 font-black uppercase">Flujo Comp.</p><p className="font-black text-gray-800">{datosGuardados.scada_flujo_biogas_nm3h}</p></div><div className="bg-gray-50 p-3 rounded-xl text-center"><p className="text-[9px] text-gray-400 font-black uppercase">Pres. Imp.</p><p className="font-black text-gray-800">{datosGuardados.scada_comp_presion_imp_mbar} mb</p></div></div><div className="grid grid-cols-2 gap-3"><div className="bg-gray-50 p-3 rounded-xl text-center"><p className="text-[9px] text-gray-400 font-black uppercase">Flujo Cald.</p><p className="font-black text-gray-800">{datosGuardados.scada_cald_flujo_m3h}</p></div><div className="bg-gray-50 p-3 rounded-xl text-center"><p className="text-[9px] text-gray-400 font-black uppercase">Flujo Ant.</p><p className="font-black text-gray-800">{datosGuardados.scada_ant_flujo_m3h}</p></div></div></div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-20 font-sans fade-in">
+                    <div className="bg-aguas-blue p-5 rounded-2xl text-white shadow-xl flex justify-between items-center"><h2 className="text-lg font-black uppercase">Línea Base SCADA</h2><button onClick={onBack} className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Volver</button></div>
+                    <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5 space-y-6">
+                        <div><h4 className="text-[10px] font-black text-aguas-blue uppercase mb-3 border-b pb-1">1. Digestor</h4><div className="grid grid-cols-3 gap-3"><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Nivel (cm)</label><Fantasma valor={prevData?.scada_dig_nivel_cm}/></div><input type="number" value={scada.dig_nivel} onChange={e => setScada({...scada, dig_nivel: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-bold bg-gray-50 outline-none focus:border-aguas-blue" /></div><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Pres. (mb)</label><Fantasma valor={prevData?.scada_dig_presion_mbar}/></div><input type="number" value={scada.dig_presion} onChange={e => setScada({...scada, dig_presion: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-bold bg-gray-50 outline-none focus:border-aguas-blue" /></div><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Temp (°C)</label><Fantasma valor={prevData?.scada_dig_temp_c}/></div><input type="number" value={scada.dig_temp} onChange={e => setScada({...scada, dig_temp: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-bold bg-gray-50 outline-none focus:border-aguas-blue" /></div></div></div>
+                        <div><h4 className="text-[10px] font-black text-aguas-yellow uppercase mb-3 border-b pb-1">2. Gasometro</h4><div className="grid grid-cols-2 gap-3"><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Nivel (%)</label><Fantasma valor={prevData?.scada_nivel_gasometro}/></div><input type="number" value={scada.gas_nivel} onChange={e => setScada({...scada, gas_nivel: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-black bg-amber-50 outline-none text-xl focus:border-aguas-yellow" /></div><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Pres. (mb)</label><Fantasma valor={prevData?.scada_presion_mbar}/></div><input type="number" value={scada.gas_presion} onChange={e => setScada({...scada, gas_presion: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-black bg-amber-50 outline-none text-xl focus:border-aguas-yellow" /></div></div></div>
+                        <div><h4 className="text-[10px] font-black text-aguas-green uppercase mb-3 border-b pb-1">3. Compresores/Calderas</h4><div className="grid grid-cols-2 gap-3 mb-3"><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Flujo Comp.</label><Fantasma valor={prevData?.scada_flujo_biogas_nm3h}/></div><input type="number" value={scada.comp_flujo} onChange={e => setScada({...scada, comp_flujo: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-bold bg-gray-50 outline-none focus:border-aguas-green" /></div><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Pres. Imp.</label><Fantasma valor={prevData?.scada_comp_presion_imp_mbar}/></div><input type="number" value={scada.comp_pres_imp} onChange={e => setScada({...scada, comp_pres_imp: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-bold bg-gray-50 outline-none focus:border-aguas-green" /></div></div><div className="grid grid-cols-2 gap-3"><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Flujo Calderas</label><Fantasma valor={prevData?.scada_cald_flujo_m3h}/></div><input type="number" value={scada.cald_flujo} onChange={e => setScada({...scada, cald_flujo: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-bold bg-gray-50 outline-none focus:border-aguas-green" /></div><div><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">Flujo Antorchas</label><Fantasma valor={prevData?.scada_ant_flujo_m3h}/></div><input type="number" value={scada.ant_flujo} onChange={e => setScada({...scada, ant_flujo: e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-bold bg-gray-50 outline-none focus:border-aguas-green" /></div></div></div>
+                    </div>
+                    <button onClick={() => onSave(scada, [
+                        {key:'dig_nivel',dbKey:'scada_dig_nivel_cm'}, {key:'dig_presion',dbKey:'scada_dig_presion_mbar'}, {key:'dig_temp',dbKey:'scada_dig_temp_c'},
+                        {key:'gas_nivel',dbKey:'scada_nivel_gasometro'}, {key:'gas_presion',dbKey:'scada_presion_mbar'},
+                        {key:'comp_flujo',dbKey:'scada_flujo_biogas_nm3h'}, {key:'comp_pres',dbKey:'scada_comp_presion_imp_mbar'},
+                        {key:'cald_flujo',dbKey:'scada_cald_flujo_m3h'}, {key:'ant_flujo',dbKey:'scada_ant_flujo_m3h'}
+                    ])} className="w-full bg-aguas-green text-white font-black py-6 rounded-3xl shadow-xl uppercase tracking-widest hover:bg-[#008251] flex justify-center items-center"><span className="text-xl mr-2">🔒</span> Sellar Base SCADA</button>
+                </div>
+            );
+        }
+
+        function VistaDashboard({ onBack }) {
+            const [data, setData] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const fetchHistory = async () => {
+                    const { data: turnos, error } = await supabaseClient.from('registro_turnos').select('*, inspeccion_gasometro(*)').order('created_at', { ascending: false }).limit(10);
+                    if (!error && turnos) setData(turnos);
+                    setLoading(false);
+                };
+                fetchHistory();
+            }, []);
+
+            return (
+                <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-100 pb-20 fade-in">
+                    <div className="bg-aguas-blue p-5 rounded-2xl text-white shadow-xl flex items-center justify-between sticky top-0 z-20">
+                        <div className="flex items-center"><span className="text-2xl mr-3">📊</span><h2 className="text-lg font-black uppercase tracking-tight">Supervisión</h2></div>
+                        <button onClick={onBack} className="bg-white/20 hover:bg-white/30 text-xs px-3 py-1 rounded-full font-bold transition-colors">Volver</button>
+                    </div>
+                    {loading ? (
+                        <div className="text-center py-20 text-gray-500 font-bold animate-pulse">Cargando Historial...</div>
+                    ) : (
+                        <div className="space-y-4">
+                            {data.map((turno) => (
+                                <div key={turno.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+                                    <div className="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
+                                        <div>
+                                            <p className="text-xs font-black text-gray-800">{new Date(turno.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
+                                            <p className="text-[10px] text-aguas-blue font-bold mb-1">{turno.operador_nombre}</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-[9px] text-gray-400 font-black uppercase mb-1">Novedades</p><p className="text-xs text-gray-700 font-medium italic">"{turno.setpoints_ajustados || 'Sin registro.'}"</p></div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -285,42 +364,279 @@
         }
 
         // ==========================================
-        // VISTAS DE PROCESO (SCADA, RIESGOS, TERRENO, TRASPASO)
-        // (Resumidas por simplicidad visual, lógica intacta de Área 70 y P.O.W.R.A anterior)
+        // RIESGOS (P.O.W.R.A.)
         // ==========================================
-        function VistaScada({ datosGuardados, prevData, onSave, onBack }) {
-            const isLocked = !!datosGuardados;
-            const camposScada = [ { key:'dig_nivel', label:'Nivel (cm)', dbKey:'scada_dig_nivel_cm' }, { key:'dig_presion', label:'Pres. (mb)', dbKey:'scada_dig_presion_mbar' }, { key:'dig_temp', label:'Temp (°C)', dbKey:'scada_dig_temp_c' }, { key:'gas_nivel', label:'Nivel (%)', dbKey:'scada_nivel_gasometro' }, { key:'gas_presion', label:'Pres. (mb)', dbKey:'scada_presion_mbar' }, { key:'comp_flujo', label:'Flujo Comp.', dbKey:'scada_flujo_biogas_nm3h' }, { key:'comp_pres', label:'Pres. Imp. (mb)', dbKey:'scada_comp_presion_imp_mbar' }, { key:'cald_flujo', label:'Flujo Calderas', dbKey:'scada_cald_flujo_m3h' }, { key:'ant_flujo', label:'Flujo Antorchas', dbKey:'scada_ant_flujo_m3h' } ];
-            const [vals, setVals] = useState(Object.fromEntries(camposScada.map(c=>[c.key,''])));
-            if (isLocked) return (<div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-20 font-sans fade-in"><div className="bg-aguas-blue p-5 rounded-2xl text-white shadow-xl flex justify-between items-center"><h2 className="text-lg font-black uppercase">SCADA Inicial</h2><button onClick={onBack} className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Volver</button></div><div className="bg-blue-50 border-2 p-4 rounded-2xl flex items-center justify-between"><p className="text-[10px] font-black text-aguas-blue uppercase">Línea Sellada</p><span className="text-3xl">🔒</span></div></div>);
+        function VistaRiesgos({ modulo, onComplete, onBack }) {
+            const [epp, setEpp]   = useState({ epp1:false, epp2:false, epp3:false, epp4:false });
+            const [ax, setAx]     = useState([]);
+
+            const atexData = {
+                gasometro:   [{ id:1, color:'red',   text:'Z1: Válvula Damper y Purga (r=1.0m)' }, { id:2, color:'amber', text:'Z2: Guarda Hidráulica (r=1.5m)' }],
+                digestor:    [{ id:1, color:'red',   text:'Z1: Interior Digestor y Escotillas' },   { id:2, color:'amber', text:'Z2: Válvulas Baja Pres.' }],
+                compresores: [{ id:1, color:'red',   text:'Z1: Caseta y Arqueta Purgas' },          { id:2, color:'amber', text:'Z2: Rejillas ventilación' }],
+                calderas:    [{ id:1, color:'red',   text:'Z1: Arqueta canalización biogás' }],
+                antorchas:   [{ id:1, color:'red',   text:'Z1: Purga automática (r=0.35m)' },       { id:2, color:'amber', text:'Z2: Tanque GLP / Base (r=2.0m)' }],
+                area50:      [{ id:1, color:'amber', text:'Riesgo H2S: Mantener detector activo' }, { id:2, color:'amber', text:'Riesgo Caídas: Pasarelas flotador' }],
+                area60:      [{ id:1, color:'red',   text:'Riesgo Térmico: Tuberías > 40°C' },       { id:2, color:'amber', text:'Alta Presión: Líneas de Lodo' }],
+                area70:      [{ id:1, color:'red',   text:'Atrapamiento: Equipos rotativos' },       { id:2, color:'amber', text:'Ruido >85dB: Uso de fonos' }, { id:3, color:'amber', text:'Químico: Superficie resbaladiza (Polímero)' }]
+            };
+
+            const riesgos = atexData[modulo] || [];
+            const toggleAx = id => setAx(prev => prev.includes(id) ? prev.filter(i=>i!==id) : [...prev, id]);
+            const listo = epp.epp1 && epp.epp2 && epp.epp3 && epp.epp4 && ax.length === riesgos.length;
+
+            const nombres = { gasometro:'Gasómetro', digestor:'Digestor', compresores:'Compresores', calderas:'Calderas', antorchas:'Antorchas y GLP', area50:'Área 50 (Flotador)', area60:'Área 60 (Intercambiador)', area70:'Área 70 (Centrífugas)' };
+
             return (
-                <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-20 font-sans fade-in">
-                    <div className="bg-aguas-blue p-5 rounded-2xl text-white shadow-xl flex justify-between items-center"><h2 className="text-lg font-black uppercase">SCADA Inicial</h2><button onClick={onBack} className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Volver</button></div>
-                    <div className="bg-white rounded-3xl shadow-md border p-5 space-y-6">
-                        <div className="grid grid-cols-3 gap-3">
-                            {camposScada.map(c=>(<div key={c.key}><div className="flex justify-between items-center mb-1"><label className="text-[9px] text-gray-400 font-black">{c.label}</label></div><input type="number" value={vals[c.key]} onChange={e=>setVals({...vals,[c.key]:e.target.value})} className="w-full border-2 p-3 rounded-xl text-center font-bold outline-none focus:border-aguas-blue" /></div>))}
+                <div className="p-4 max-w-md mx-auto space-y-4 min-h-screen pb-10 font-sans fade-in">
+                    <div className="bg-aguas-dark p-5 rounded-2xl text-white shadow-xl flex justify-between items-center">
+                        <div className="flex items-center"><span className="text-2xl mr-3">🛑</span><h2 className="text-lg font-black uppercase">P.O.W.R.A.</h2></div>
+                        <button onClick={onBack} className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold hover:bg-white/30">Volver</button>
+                    </div>
+                    <p className="text-[11px] text-gray-500 font-black px-2 uppercase tracking-widest text-center">Evaluación: {nombres[modulo]}</p>
+
+                    <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-3">
+                        {[['epp1','Casco, Lentes, Guantes'],['epp2','Detector Multigas Activo'],['epp3','Máscara / Filtros'],['epp4','Equipos Móviles Seguros']].map(([k,label]) => (
+                            <label key={k} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-2xl border cursor-pointer hover:bg-gray-100 transition-colors">
+                                <input type="checkbox" onChange={e=>setEpp({...epp,[k]:e.target.checked})} className="h-6 w-6 rounded text-aguas-blue" />
+                                <span className="text-xs font-bold">{label}</span>
+                            </label>
+                        ))}
+                    </div>
+
+                    <div className="bg-red-50/50 rounded-3xl shadow-sm border border-red-200 p-5">
+                        <h3 className="text-[10px] font-black text-red-600 uppercase mb-2 border-b border-red-200 pb-2">Peligros Específicos del Área</h3>
+                        <div className="space-y-3">
+                            {riesgos.map(r => (
+                                <label key={r.id} className={`flex items-center space-x-3 p-3 bg-white rounded-2xl border-2 ${r.color==='red' ? 'border-red-200 hover:border-red-400' : 'border-amber-200 hover:border-amber-400'} cursor-pointer transition-colors`}>
+                                    <input type="checkbox" onChange={()=>toggleAx(r.id)} className="h-6 w-6 rounded-lg" />
+                                    <span className={`text-[11px] font-black leading-tight ${r.color==='red' ? 'text-red-800' : 'text-amber-800'}`}>{r.text}</span>
+                                </label>
+                            ))}
                         </div>
                     </div>
-                    <button onClick={()=>onSave(vals,camposScada)} className="w-full bg-aguas-green text-white font-black py-6 rounded-3xl shadow-xl uppercase">Sellar SCADA</button>
+                    <button onClick={onComplete} disabled={!listo} className={`w-full text-white font-black py-6 rounded-3xl shadow-xl uppercase tracking-[0.2em] transition-all active:scale-95 ${listo ? 'bg-aguas-green hover:bg-[#008251]' : 'bg-gray-300 cursor-not-allowed'}`}>
+                        Autorizar Ingreso
+                    </button>
                 </div>
             );
         }
 
         // ==========================================
-        // APP PRINCIPAL Y LÓGICA CONDICIONAL
+        // FORMULARIO ÁREA 70
+        // ==========================================
+        function FormularioArea70({ turnoId, prevData, onTerminado }) {
+            const [fd, setFd] = useState({ centrifuga:'A', torque:'', vel_rel:'', polipack:'', bombas:'Optimo', observaciones:'' });
+            const [fotos, setFotos] = useState({});
+            const mf = (c,u) => setFotos(p=>({...p,[c]:u}));
+
+            const torq=parseFloat(fd.torque), vel=parseFloat(fd.vel_rel), poli=parseFloat(fd.polipack);
+            const alTorque = torq < 33 || torq > 45;
+            const alVel = vel < 2.5 || vel > 6.5;
+            const alPoli = poli < 50;
+            
+            const reqObs = fd.bombas !== 'Optimo' || alTorque || alVel || alPoli;
+            const camposOblig = ['a70_centrifuga','a70_polipack'];
+            const canSubmit = camposOblig.every(c=>fotos[c]?.length>0) && fd.torque !== '' && fd.vel_rel !== '' && fd.polipack !== '' && (!reqObs || fd.observaciones.trim() !== '');
+
+            return (
+                <div className="p-4 max-w-md mx-auto space-y-6 min-h-screen pb-10 font-sans fade-in">
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl"><h2 className="text-lg font-black uppercase">Área 70: Deshidratación</h2></div>
+
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-blue shadow-sm border">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-1: Centrífugas</h3>
+                        <label className="text-[10px] font-black uppercase block mb-1">Centrífuga Activa</label>
+                        <select value={fd.centrifuga} onChange={e=>setFd({...fd,centrifuga:e.target.value})} className="w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue">
+                            <option>A</option><option>B</option><option>Móvil</option>
+                        </select>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <div className="flex justify-between mb-1"><label className="text-[9px] font-black uppercase">Torque (%)</label><Fantasma valor={prevData?.torque}/></div>
+                                <input type="number" step="0.1" value={fd.torque} onChange={e=>setFd({...fd,torque:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alTorque ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                                {alTorque && <p className="text-[8px] text-red-600 font-bold mt-1">⚠️ Rango: 33 - 45</p>}
+                            </div>
+                            <div>
+                                <div className="flex justify-between mb-1"><label className="text-[9px] font-black uppercase">Vel. Relativa</label><Fantasma valor={prevData?.velocidad_relativa}/></div>
+                                <input type="number" step="0.1" value={fd.vel_rel} onChange={e=>setFd({...fd,vel_rel:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alVel ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                                {alVel && <p className="text-[8px] text-red-600 font-bold mt-1">⚠️ Rango: 2.5 - 6.5</p>}
+                            </div>
+                        </div>
+                        <MultiFotoUploader idCampo="a70_centrifuga" turnoId={turnoId} onFotosActualizadas={mf} titulo="Tablero / Equipo" />
+                    </div>
+
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-green shadow-sm border">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-2: Sistema Polipack</h3>
+                        <div className="flex justify-between mb-1"><label className="text-[9px] font-black uppercase">Nivel Tolva Polímero (%)</label><Fantasma valor={prevData?.nivel_polipack}/></div>
+                        <input type="number" value={fd.polipack} onChange={e=>setFd({...fd,polipack:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-3 outline-none focus:border-aguas-blue ${alPoli ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                        {alPoli && <p className="text-[9px] text-red-600 font-bold -mt-2 mb-2">⚠️ Rellenar tolva ({">"} 50%)</p>}
+                        
+                        <label className="text-[10px] font-black uppercase block mb-1">Bombas Dosificadoras</label>
+                        <select value={fd.bombas} onChange={e=>setFd({...fd,bombas:e.target.value})} className="w-full border-2 p-3 rounded-xl text-sm mb-2 outline-none focus:border-aguas-blue">
+                            <option>Optimo</option><option>Fuga de polímero</option><option>Falla de flujo</option>
+                        </select>
+                        <MultiFotoUploader idCampo="a70_polipack" turnoId={turnoId} onFotosActualizadas={mf} titulo="Tolva / Bombas" />
+                    </div>
+
+                    <div className="bg-white p-5 rounded-3xl shadow-sm border">
+                        <label className="text-[10px] font-black uppercase mb-2 block">Observaciones Área 70</label>
+                        {reqObs && <p className="text-[10px] text-red-600 font-black mb-2 animate-pulse uppercase">⚠️ Justifique desviaciones de proceso</p>}
+                        <textarea value={fd.observaciones} onChange={e=>setFd({...fd,observaciones:e.target.value})} className={`w-full border-2 p-4 rounded-2xl text-sm outline-none focus:border-aguas-blue ${reqObs ? 'bg-red-50 border-red-400' : ''}`} rows="3"></textarea>
+                    </div>
+                    <button onClick={()=>onTerminado(fd,fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-6 rounded-3xl shadow-xl uppercase tracking-widest active:scale-95 transition-all ${canSubmit ? 'bg-aguas-blue hover:bg-aguas-dark' : 'bg-gray-300 cursor-not-allowed'}`}>Sellar Área 70</button>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // TRASPASO DE TURNO
+        // ==========================================
+        function VistaTraspaso({ prevTurno, prevGasometro, prevDigestor, prevCompresores, prevCalderas, prevAntorchas, prevA50, prevA60, prevA70, onBack }) {
+            if (!prevTurno) return (
+                <div className="p-4 max-w-md mx-auto min-h-screen fade-in">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm text-center border mt-10">
+                        <p className="font-bold text-gray-500 text-sm">No hay datos del turno anterior.</p>
+                        <button onClick={onBack} className="mt-6 bg-aguas-blue text-white px-6 py-3 rounded-xl font-black uppercase text-sm">Volver</button>
+                    </div>
+                </div>
+            );
+
+            const anomalias = [];
+            if (prevGasometro) {
+                if (prevGasometro.estado_anclajes && prevGasometro.estado_anclajes !== 'Optimo') anomalias.push(`Gasómetro: Anclajes ${prevGasometro.estado_anclajes}`);
+                if (prevGasometro.lectura_lel_porcentaje > 0) anomalias.push(`Gasómetro: LEL ${prevGasometro.lectura_lel_porcentaje}%`);
+                if (prevGasometro.nivel_guarda_hidraulica && prevGasometro.nivel_guarda_hidraulica !== 'Nivel Normal') anomalias.push(`Gasómetro: Guarda ${prevGasometro.nivel_guarda_hidraulica}`);
+                if (prevGasometro.estado_gabinete_electrico && !prevGasometro.estado_gabinete_electrico.includes('Operativo')) anomalias.push(`Gasómetro: Gabinete Falla`);
+            }
+            if (prevDigestor) {
+                if (prevDigestor.estado_escotillas !== 'Optimo (Sin fugas)') anomalias.push(`Digestor: ${prevDigestor.estado_escotillas}`);
+                if (prevDigestor.estado_valvulas !== 'Optimo') anomalias.push(`Digestor: Válvulas ${prevDigestor.estado_valvulas}`);
+                if (prevDigestor.estado_purgas !== 'Operativa (Sin obstrucciones)') anomalias.push(`Digestor: ${prevDigestor.estado_purgas}`);
+            }
+            if (prevCompresores) {
+                if (prevCompresores.estado_compresores !== 'Optimo') anomalias.push(`Compresores: ${prevCompresores.estado_compresores}`);
+            }
+            if (prevCalderas) {
+                if (prevCalderas.estado_quemador !== 'Optimo') anomalias.push(`Calderas: Quemador ${prevCalderas.estado_quemador}`);
+            }
+            if (prevAntorchas) {
+                if (prevAntorchas.estado_quemador !== 'Optimo') anomalias.push(`Antorchas: ${prevAntorchas.estado_quemador}`);
+            }
+            if (prevA50) {
+                if (prevA50.altura_lodo_cm > 120) anomalias.push(`Área 50: Manto Lodo Alto (${prevA50.altura_lodo_cm}cm)`);
+                if (prevA50.presion_balon_bar < 3) anomalias.push(`Área 50: Presión Balón Baja (${prevA50.presion_balon_bar}bar)`);
+            }
+            if (prevA60) {
+                if (prevA60.temp_lodo_entrada_c <= 34) anomalias.push(`Área 60: T° Entrada Baja (${prevA60.temp_lodo_entrada_c}°C)`);
+                if (prevA60.temp_lodo_salida_c >= 35.5) anomalias.push(`Área 60: T° Salida Alta (${prevA60.temp_lodo_salida_c}°C)`);
+            }
+            if (prevA70) {
+                if (prevA70.torque < 33 || prevA70.torque > 45) anomalias.push(`Área 70: Torque Anormal (${prevA70.torque}%)`);
+                if (prevA70.velocidad_relativa < 2.5 || prevA70.velocidad_relativa > 6.5) anomalias.push(`Área 70: Vel. Relativa Anormal (${prevA70.velocidad_relativa})`);
+                if (prevA70.nivel_polipack < 50) anomalias.push(`Área 70: Polipack Bajo (${prevA70.nivel_polipack}%)`);
+            }
+
+            const obsList = [
+                { area:'Gasómetro',  text: prevGasometro?.observaciones },
+                { area:'Digestor',   text: prevDigestor?.observaciones },
+                { area:'Compresores',text: prevCompresores?.observaciones },
+                { area:'Calderas',   text: prevCalderas?.observaciones },
+                { area:'Antorchas',  text: prevAntorchas?.observaciones },
+                { area:'Área 50',    text: prevA50?.observaciones },
+                { area:'Área 60',    text: prevA60?.observaciones },
+                { area:'Área 70',    text: prevA70?.observaciones },
+            ].filter(o => o.text?.trim());
+
+            return (
+                <div className="p-4 max-w-md mx-auto min-h-screen font-sans pb-10 space-y-4 fade-in">
+                    <div className="bg-aguas-blue p-5 rounded-2xl text-white shadow-xl flex justify-between items-center sticky top-0 z-20">
+                        <div className="flex items-center"><span className="text-2xl mr-3">📋</span><h2 className="text-lg font-black uppercase tracking-tight">Traspaso de Turno</h2></div>
+                        <button onClick={onBack} className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold hover:bg-white/30">Volver</button>
+                    </div>
+
+                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Operador Saliente</p>
+                            <p className="text-sm font-bold text-gray-800">{prevTurno.operador_nombre}</p>
+                            <p className="text-[10px] text-gray-500 mt-1">{new Date(prevTurno.created_at).toLocaleString('es-CL')}</p>
+                        </div>
+                        <div className="bg-blue-50 text-aguas-blue px-3 py-1 rounded-full text-xs font-black border border-blue-200 uppercase">{prevTurno.tipo_turno}</div>
+                    </div>
+
+                    {prevTurno.setpoints_ajustados && (
+                        <div className="bg-blue-50 rounded-3xl p-5 shadow-sm border border-blue-200">
+                            <h3 className="text-[10px] font-black text-aguas-blue uppercase tracking-widest mb-2">⚙️ Ajustes Operacionales</h3>
+                            <p className="text-sm text-blue-900 font-medium italic">"{prevTurno.setpoints_ajustados}"</p>
+                        </div>
+                    )}
+
+                    {anomalias.length > 0 && (
+                        <div className="bg-red-50 rounded-3xl p-5 shadow-sm border border-red-200">
+                            <h3 className="text-[10px] font-black text-red-800 uppercase tracking-widest mb-3 flex items-center"><span className="text-lg mr-2">⚠️</span> {anomalias.length} Alertas Detectadas</h3>
+                            <ul className="space-y-2">{anomalias.map((a,i)=><li key={i} className="text-xs text-red-700 font-bold bg-white p-2 rounded-xl border border-red-100">• {a}</li>)}</ul>
+                        </div>
+                    )}
+
+                    {!anomalias.length && (
+                        <div className="bg-emerald-50 rounded-3xl p-5 shadow-sm border border-emerald-200 flex items-center space-x-3">
+                            <span className="text-2xl">✅</span>
+                            <p className="text-sm font-black text-emerald-800">Turno anterior sin anomalías registradas</p>
+                        </div>
+                    )}
+
+                    {obsList.length > 0 && (
+                        <div className="bg-amber-50 rounded-3xl p-5 shadow-sm border border-amber-200">
+                            <h3 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-3">📝 Observaciones</h3>
+                            <div className="space-y-3">
+                                {obsList.map((o,idx)=>(
+                                    <div key={idx} className="bg-white p-3 rounded-xl border border-amber-100">
+                                        <p className="text-[9px] font-black text-amber-600 uppercase">{o.area}</p>
+                                        <p className="text-xs text-amber-900 font-medium italic mt-1">"{o.text}"</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">SCADA del Turno Saliente</h3>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                            {[
+                                {label:'Nivel Dig.',  val: prevTurno.scada_dig_nivel_cm,        unit:'cm',  bg:'bg-gray-50'},
+                                {label:'Pres. Dig.',  val: prevTurno.scada_dig_presion_mbar,    unit:'mb',  bg:'bg-gray-50'},
+                                {label:'Temp Dig.',   val: prevTurno.scada_dig_temp_c,          unit:'°C',  bg:'bg-gray-50'},
+                                {label:'Nivel Gas.',  val: prevTurno.scada_nivel_gasometro,     unit:'%',   bg:'bg-amber-50'},
+                                {label:'Pres. Gas.',  val: prevTurno.scada_presion_mbar,        unit:'mb',  bg:'bg-amber-50'},
+                                {label:'Flujo Comp.', val: prevTurno.scada_flujo_biogas_nm3h,   unit:'',    bg:'bg-gray-50'},
+                                {label:'Pres. Imp.',  val: prevTurno.scada_comp_presion_imp_mbar,unit:'mb',  bg:'bg-gray-50'},
+                                {label:'Flujo Cald.', val: prevTurno.scada_cald_flujo_m3h,       unit:'',    bg:'bg-gray-50'},
+                                {label:'Flujo Ant.',  val: prevTurno.scada_ant_flujo_m3h,        unit:'',    bg:'bg-gray-50'},
+                            ].map(({label,val,unit,bg},i)=>(
+                                <div key={i} className={`${bg} p-2 rounded-xl text-center`}>
+                                    <span className="text-gray-400 block text-[9px] font-black uppercase mb-1">{label}</span>
+                                    <span className="font-bold text-gray-800">{val ?? '—'}{val && unit ? ' '+unit : ''}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // APP PRINCIPAL
         // ==========================================
         function App() {
-            const [user, setUser] = useState(null);
-            const [authChecking, setAuthChecking] = useState(true);
-            const [vista, setVista] = useState('hub');
-            const [moduloDestino, setModuloDestino] = useState(null);
-            const [isSaving, setIsSaving] = useState(false);
+            const [user, setUser]                     = useState(null);
+            const [authChecking, setAuthChecking]     = useState(true);
+            const [vista, setVista]                   = useState('hub');
+            const [moduloDestino, setModuloDestino]   = useState(null);
+            const [isSaving, setIsSaving]             = useState(false);
             const [syncInProgress, setSyncInProgress] = useState(false);
-            const { push: toast, ToastContainer } = useToast();
+            const { push: toast, ToastContainer }     = useToast();
 
             const { currentStr, prevStr, isNoche, isMiercolesDia } = getTokens();
-            const [shiftToken] = useState(currentStr);
-            const [prevToken]  = useState(prevStr);
+            const [shiftToken]  = useState(currentStr);
+            const [prevToken]   = useState(prevStr);
 
             const [currentScada, setCurrentScada] = useState(null);
             const [currentGas, setCurrentGas]     = useState(null);
@@ -331,14 +647,12 @@
             const [currentA50, setCurrentA50]     = useState(null);
             const [currentA60, setCurrentA60]     = useState(null);
             const [currentA70, setCurrentA70]     = useState(null);
-            
-            // Logística y Especiales
             const [currentEnt, setCurrentEnt]     = useState(null);
             const [currentTot, setCurrentTot]     = useState(null);
             const [currentGen, setCurrentGen]     = useState(null);
-            
             const [prevData, setPrevData]         = useState({});
 
+            // ---- Carga colaborativa ----
             const cargarDatos = useCallback(async (silencioso = false) => {
                 if (!silencioso) setSyncInProgress(true);
                 try {
@@ -348,7 +662,7 @@
                         sb.from(t).select('*').eq('turno_token', prevToken).maybeSingle(),
                     ]);
                     const results = await Promise.all(queries);
-                    if (results.some(r => r.error)) throw new Error("Error en BD");
+                    if (results.some(r => r.error)) throw new Error("Error en base de datos");
 
                     const d = results.map(r => r.data);
                     const prev = {};
@@ -362,26 +676,43 @@
                     setPrevData(prev);
                     
                     if (!silencioso) toast('Datos sincronizados ✓', 'success');
-                } catch (e) { toast('Error de sync', 'error'); } finally { setSyncInProgress(false); }
+                } catch (e) { toast('Error de sincronización', 'error'); } finally { setSyncInProgress(false); }
             }, [shiftToken, prevToken]);
 
-            useEffect(() => { sb.auth.getSession().then(({ data: { session } }) => { setUser(session?.user ?? null); setAuthChecking(false); }); }, []);
-            useEffect(() => { if (user) cargarDatos(true); }, [user]);
+            useEffect(() => {
+                sb.auth.getSession().then(({ data: { session } }) => {
+                    setUser(session?.user ?? null);
+                    setAuthChecking(false);
+                });
+            }, []);
+
+            useEffect(() => {
+                if (user) cargarDatos(true);
+            }, [user]);
 
             if (authChecking) return <div className="min-h-screen bg-gray-100 flex items-center justify-center"><div className="w-10 h-10 border-4 border-aguas-blue border-t-transparent rounded-full animate-spin"></div></div>;
-            if (!user) return <PantallaLogin onLogin={u => setUser(u)} />;
+            if (!user)        return <PantallaLogin onLogin={u => setUser(u)} />;
 
-            const guardarGenerico = async (tabla, currentData, payloadExtra) => {
+            // ---- Guardado genérico ----
+            const guardarGenerico = async (tabla, currentData, payload) => {
                 setIsSaving(true);
                 try {
-                    const base = { turno_token: shiftToken, turno_id: currentScada?.id ?? null, operador_nombre: user.email, ...payloadExtra };
-                    const { error } = currentData?.id ? await sb.from(tabla).update(base).eq('id', currentData.id) : await sb.from(tabla).insert([base]);
+                    const base = { turno_token: shiftToken, turno_id: currentScada?.id ?? null, operador_nombre: user.email, ...payload };
+                    const { error } = currentData?.id
+                        ? await sb.from(tabla).update(base).eq('id', currentData.id)
+                        : await sb.from(tabla).insert([base]);
                     if (error) throw error;
                     await cargarDatos(true);
-                    toast('Módulo sellado ✓', 'success'); setVista('hub');
-                } catch (e) { toast(`Error guardando: ` + e.message, 'error'); } finally { setIsSaving(false); }
+                    toast('Módulo sellado ✓', 'success');
+                    setVista('hub');
+                } catch (e) {
+                    toast(`Error guardando: ` + e.message, 'error');
+                } finally {
+                    setIsSaving(false);
+                }
             };
 
+            // ---- Handlers ----
             const handleSaveScada = async (vals, campos) => {
                 setIsSaving(true);
                 try {
@@ -390,117 +721,214 @@
                     const { error } = currentScada?.id ? await sb.from('registro_turnos').update(payload).eq('id', currentScada.id) : await sb.from('registro_turnos').insert([payload]);
                     if (error) throw error;
                     await cargarDatos(true); toast('SCADA sellado ✓', 'success'); setVista('hub');
-                } catch(e) { toast('Error SCADA', 'error'); } finally { setIsSaving(false); }
+                } catch(e) { toast('Error SCADA: ' + e.message, 'error'); } finally { setIsSaving(false); }
             };
 
-            // Handlers Logística
             const handleSaveEnt = (d) => guardarGenerico('inspeccion_entrega', currentEnt, { radios_ok: d.radios, llaves_ok: d.llaves, detector_ok: d.detector, linternas_ok: d.linternas, sacos_polimero_centrifuga: d.pol_cen||null, sacos_polimero_sedipack: d.pol_sedi||null, litros_petroleo: d.petroleo||null, sacos_cal_viva: d.cal||null, observaciones: d.observaciones });
             const handleSaveTot = (d) => guardarGenerico('inspeccion_totalizadores', currentTot, { m3_lodos: d.lodos||null, m3_biogas: d.biogas||null, horometro_caldera1: d.hc1||null, horometro_caldera2: d.hc2||null, observaciones: d.observaciones });
             const handleSaveGen = (d) => guardarGenerico('inspeccion_generador', currentGen, { nivel_inicio_pct: d.inicio||null, nivel_fin_pct: d.fin||null, prueba_ok: d.prueba_ok, observaciones: d.observaciones });
 
-            // FLAGS COMPLETITUD
+            // (Gasómetro, Digestor, Compresores, Calderas, Antorchas, A50, A60, A70)
+            const handleSaveGasometro = (d, fotos) => guardarGenerico('inspeccion_gasometro', currentGas, { estado_anclajes: d.anclajes, altura_interna_m: d.altura||null, presion_inter_membrana_mbar: d.presion||null, lectura_lel_porcentaje: d.lel||null, nivel_guarda_hidraulica: d.guarda, soplador_1_estado: d.soplador_1, soplador_2_estado: d.soplador_2, sopladores_condicion_mecanica: d.condicion_sopladores, flujo_agua_trampa: d.agua_trampa, estado_valvula_corte: d.valvula_corte, estado_gabinete_electrico: d.gabinete, observaciones: d.observaciones, foto_anclaje: fotos.anclaje?.[0]||null, foto_altura: fotos.altura?.[0]||null, foto_presion: fotos.presion?.[0]||null, foto_lel: fotos.lel?.[0]||null, foto_guarda: fotos.guarda?.[0]||null, foto_sopladores: fotos.sopladores?.[0]||null, foto_trampa: fotos.trampa?.[0]||null, foto_gabinete: fotos.gabinete?.[0]||null });
+            const handleSaveDigestor = (d, fotos) => guardarGenerico('inspeccion_digestor', currentDig, { estado_escotillas: d.escotillas, estado_valvulas: d.valvulas, estado_purgas: d.purgas, estado_revestimiento: d.revestimiento, observaciones: d.observaciones, foto_escotillas: fotos.escotillas?.[0]||null, foto_valvulas: fotos.valvulas?.[0]||null, foto_purgas: fotos.purgas?.[0]||null, foto_revestimiento: fotos.revestimiento?.[0]||null });
+            const handleSaveCompresores = (d, fotos) => guardarGenerico('inspeccion_compresores', currentComp, { estado_compresores: d.estado_gral, estado_filtros: d.filtros, estado_chiller: d.chiller, estado_valvulas: d.valvulas, estado_tablero: d.tablero, observaciones: d.observaciones, foto_compresores: fotos.general?.[0]||null, foto_filtros: fotos.filtros?.[0]||null, foto_chiller: fotos.chiller?.[0]||null, foto_valvulas: fotos.valvulas?.[0]||null, foto_tablero: fotos.tablero?.[0]||null });
+            const handleSaveCalderas = (d, fotos) => guardarGenerico('inspeccion_calderas', currentCald, { estado_quemador: d.quemador, estado_circuito_agua: d.circuito, estado_bombas: d.bombas, estado_chimenea: d.chimenea, estado_tablero: d.tablero, observaciones: d.observaciones, foto_quemador: fotos.quemador?.[0]||null, foto_circuito_agua: fotos.circuito?.[0]||null, foto_bombas: fotos.bombas?.[0]||null, foto_chimenea: fotos.chimenea?.[0]||null, foto_tablero: fotos.tablero?.[0]||null });
+            const handleSaveAntorchas = (d, fotos) => guardarGenerico('inspeccion_antorchas', currentAnt, { estado_quemador: d.quemador, estado_valvulas: d.valvulas, nivel_glp_pct: d.nivel_glp||null, estado_tablero: d.tablero, observaciones: d.observaciones, foto_quemador: fotos.ant_quemador?.[0]||null, foto_valvulas: fotos.ant_valvulas?.[0]||null, foto_glp: fotos.ant_glp?.[0]||null, foto_tablero: fotos.ant_tablero?.[0]||null });
+            const handleSaveA50 = (d, fotos) => guardarGenerico('inspeccion_area50', currentA50, { estado_rastras: d.rastras, altura_lodo_cm: d.altura||null, nivel_balon_cm: d.nivel||null, presion_balon_bar: d.presion||null, camara_mezcla_pct: d.mezcla||null, observaciones: d.observaciones, foto_flotador: fotos.a50_flotador?.[0]||null, foto_balon: fotos.a50_balon?.[0]||null });
+            const handleSaveA60 = (d, fotos) => guardarGenerico('inspeccion_area60', currentA60, { temp_lodo_entrada_c: d.temp_in||null, temp_lodo_salida_c: d.temp_out||null, estado_bombas: d.bombas, observaciones: d.observaciones, foto_intercambiador: fotos.a60_inter?.[0]||null, foto_bombas: fotos.a60_bombas?.[0]||null });
+            const handleSaveA70 = (d, fotos) => guardarGenerico('inspeccion_area70', currentA70, { centrifuga_activa: d.centrifuga, torque: d.torque||null, velocidad_relativa: d.vel_rel||null, nivel_polipack: d.polipack||null, estado_bombas: d.bombas, observaciones: d.observaciones, foto_centrifuga: fotos.a70_centrifuga?.[0]||null, foto_polipack: fotos.a70_polipack?.[0]||null });
+
+            // ---- LOADER OVERLAY ----
+            const Loader = () => (
+                <div className="fixed inset-0 bg-aguas-dark/90 z-50 flex flex-col items-center justify-center text-white backdrop-blur-sm">
+                    <div className="text-4xl animate-spin mb-6 text-aguas-yellow">⚙️</div>
+                    <h2 className="font-black tracking-[0.3em] uppercase">Guardando Evidencia...</h2>
+                </div>
+            );
+
+            // ---- RUTAS SECUNDARIAS ----
+            if (vista === 'turno_cerrado') return (
+                <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6 font-sans">
+                    <div className="bg-white p-8 rounded-3xl text-center shadow-xl border-t-8 border-aguas-green fade-in max-w-sm w-full">
+                        <div className="text-5xl mb-4">🎉</div>
+                        <h2 className="text-xl font-black text-aguas-dark mb-2 uppercase">Turno Cerrado</h2>
+                        <p className="text-sm text-gray-500 mb-6">El turno ha sido registrado y sellado correctamente.</p>
+                        <button onClick={async()=>{ await sb.auth.signOut(); setUser(null); setVista('hub'); }} className="bg-aguas-blue text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest shadow-md w-full hover:bg-aguas-dark transition-colors">Cerrar Sesión</button>
+                    </div>
+                </div>
+            );
+
+            if (vista === 'dashboard') return <VistaDashboard onBack={() => setVista('hub')} />;
+            if (vista === 'traspaso')  return <VistaTraspaso prevTurno={prevData.turno} prevGasometro={prevData.gasometro} prevDigestor={prevData.digestor} prevCompresores={prevData.compresores} prevCalderas={prevData.calderas} prevAntorchas={prevData.antorchas} prevA50={prevData.area50} prevA60={prevData.area60} prevA70={prevData.area70} onBack={()=>setVista('hub')} />;
+            if (vista === 'scada')       return <>{isSaving && <Loader/>}<VistaScada datosGuardados={currentScada} prevData={prevData.turno} onSave={handleSaveScada} onBack={()=>setVista('hub')} /></>;
+            if (vista === 'riesgos')     return <VistaRiesgos modulo={moduloDestino} onComplete={()=>setVista(moduloDestino)} onBack={()=>setVista('hub')} />;
+            
+            if (vista === 'entrega')       return <>{isSaving && <Loader/>}<FormularioEntrega onTerminado={handleSaveEnt} prevData={prevData.entrega}/></>;
+            if (vista === 'totalizadores') return <>{isSaving && <Loader/>}<FormularioTotalizadores onTerminado={handleSaveTot} prevData={prevData.totalizadores}/></>;
+            if (vista === 'generador')     return <>{isSaving && <Loader/>}<FormularioGenerador onTerminado={handleSaveGen} prevData={prevData.generador}/></>;
+
+            if (vista === 'gasometro')   return <>{isSaving && <Loader/>}<FormularioGasometro turnoId={shiftToken} prevData={prevData.gasometro} onTerminado={handleSaveGasometro} /></>;
+            if (vista === 'digestor')    return <>{isSaving && <Loader/>}<FormularioDigestor  turnoId={shiftToken} prevData={prevData.digestor}  onTerminado={handleSaveDigestor} /></>;
+            if (vista === 'compresores') return <>{isSaving && <Loader/>}<FormularioCompresores turnoId={shiftToken} prevData={prevData.compresores} onTerminado={handleSaveCompresores} /></>;
+            if (vista === 'calderas')    return <>{isSaving && <Loader/>}<FormularioCalderas  turnoId={shiftToken} prevData={prevData.calderas}  onTerminado={handleSaveCalderas} /></>;
+            if (vista === 'antorchas')   return <>{isSaving && <Loader/>}<FormularioAntorchas turnoId={shiftToken} prevData={prevData.antorchas} onTerminado={handleSaveAntorchas} /></>;
+            if (vista === 'area50')      return <>{isSaving && <Loader/>}<FormularioArea50    turnoId={shiftToken} prevData={prevData.area50}    onTerminado={handleSaveA50} /></>;
+            if (vista === 'area60')      return <>{isSaving && <Loader/>}<FormularioArea60    turnoId={shiftToken} prevData={prevData.area60}    onTerminado={handleSaveA60} /></>;
+            if (vista === 'area70')      return <>{isSaving && <Loader/>}<FormularioArea70    turnoId={shiftToken} prevData={prevData.area70}    onTerminado={handleSaveA70} /></>;
+
+            // ---- HUB PRINCIPAL ----
             const scadaDone=!!currentScada, gasDone=!!currentGas, digDone=!!currentDig, compDone=!!currentComp, caldDone=!!currentCald, antDone=!!currentAnt, a50Done=!!currentA50, a60Done=!!currentA60, a70Done=!!currentA70;
             const entDone=!!currentEnt, totDone=!!currentTot, genDone=!!currentGen;
 
-            // Motor Matemático de Requerimientos Condicionales
             let requeridos = [scadaDone, entDone, gasDone, digDone, compDone, caldDone, antDone, a50Done, a60Done, a70Done];
             if (isNoche) requeridos.push(totDone);
             if (isMiercolesDia) requeridos.push(genDone);
-            
             const completados = requeridos.filter(Boolean).length;
             const totalReq = requeridos.length;
             const todosCompletos = completados === totalReq;
 
-            const navTo = (modulo) => setVista(modulo); // Bypass riesgos for admin modules
+            const urlDigestor   = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Digestor.jpg";
+            const urlGasometro  = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Gasometro%20vista%20general.jpeg";
+            const urlCompresores = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Sala%20de%20Compresores.jpg";
+            const urlCalderas   = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Sala%20de%20Calderas.jpg";
+            const urlAntorchas  = "https://cbvipsjpvlgyipifidyo.supabase.co/storage/v1/object/public/inspeccion_fotos/Antorchas.jpeg";
 
-            if (vista === 'hub') {
-                return (
-                    <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-50 pb-10 fade-in">
-                        <ToastContainer />
-                        <div className="bg-white p-6 rounded-3xl border-t-[12px] border-aguas-blue shadow-xl">
-                            <div className="flex justify-between items-start border-b pb-4 mb-4">
-                                <div className="flex items-center"><div className="w-10 h-10 bg-aguas-blue rounded-xl flex items-center justify-center mr-3"><span className="font-black text-white text-sm">RS</span></div><div><h1 className="text-xl font-black text-aguas-dark">RondaSync</h1><p className="text-[10px] text-aguas-green font-black uppercase">{shiftToken}</p></div></div>
-                                <button onClick={async()=>{ await sb.auth.signOut(); window.location.reload(); }} className="text-[10px] font-black bg-red-50 text-red-600 px-4 py-2 rounded-xl">SALIR</button>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <div><p className="text-[9px] text-gray-400 font-black uppercase mb-1">Operador</p><p className="text-sm font-bold text-gray-800 truncate max-w-[160px]">{user.email.split('@')[0]}</p></div>
-                                <button onClick={()=>cargarDatos(false)} disabled={syncInProgress} className="bg-aguas-blue text-white px-4 py-2 rounded-xl text-[10px] font-black flex items-center shadow-md">🔄 Sync</button>
-                            </div>
-                        </div>
-
-                        {/* ADMINISTRACIÓN */}
-                        <div className="space-y-3">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase px-1 mb-2 border-b pb-2">Administración y Logs</h3>
-                            <button onClick={()=>setVista('scada')} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${scadaDone ? 'bg-emerald-50 border-aguas-green shadow-inner' : 'bg-white border-gray-200'}`}>
-                                <div className="flex items-center space-x-4"><span className="text-2xl">{scadaDone ? '🔒' : '🖥️'}</span><span className={`font-black text-sm uppercase ${scadaDone ? 'text-aguas-green' : 'text-gray-800'}`}>SCADA Inicial</span></div>
-                                <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${scadaDone ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}`}>{scadaDone ? 'Ver' : 'Llenar'}</span>
-                            </button>
-                            <button onClick={()=>setVista('entrega')} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${entDone ? 'bg-emerald-50 border-aguas-green shadow-inner' : 'bg-white border-gray-200'}`}>
-                                <div className="flex items-center space-x-4"><span className="text-2xl">📦</span><span className={`font-black text-sm uppercase ${entDone ? 'text-aguas-green' : 'text-gray-800'}`}>Stock y Entregas</span></div>
-                                <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${entDone ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800'}`}>{entDone ? 'Ver' : 'Llenar'}</span>
-                            </button>
-                        </div>
-
-                        {/* TAREAS CONDICIONALES DE TURNO */}
-                        {(isNoche || isMiercolesDia) && (
-                            <div className="space-y-3 mt-4">
-                                <h3 className="text-[10px] font-black text-orange-500 uppercase px-1 mb-2 border-b border-orange-200 pb-2">Tareas Especiales de Turno</h3>
-                                {isNoche && (
-                                    <button onClick={()=>setVista('totalizadores')} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${totDone ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-fuchsia-300'}`}>
-                                        <div className="flex items-center space-x-4"><span className="text-2xl">⏱️</span><span className={`font-black text-sm uppercase ${totDone ? 'text-aguas-green' : 'text-fuchsia-800'}`}>Totalizadores (00:30)</span></div>
-                                        <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${totDone ? 'bg-emerald-100 text-emerald-800' : 'bg-fuchsia-100 text-fuchsia-800'}`}>{totDone ? 'Ver' : 'Llenar'}</span>
-                                    </button>
-                                )}
-                                {isMiercolesDia && (
-                                    <button onClick={()=>setVista('generador')} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${genDone ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-orange-300'}`}>
-                                        <div className="flex items-center space-x-4"><span className="text-2xl">⚡</span><span className={`font-black text-sm uppercase ${genDone ? 'text-aguas-green' : 'text-orange-800'}`}>Prueba Generador</span></div>
-                                        <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${genDone ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'}`}>{genDone ? 'Ver' : 'Llenar'}</span>
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        {/* TERRENO */}
-                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3 mt-6 border-b border-gray-200 pb-2">Inspecciones de Terreno</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="col-span-2 text-[10px] font-black text-gray-400 text-center mt-2">-- CIRCUITO BIOGÁS --</div>
-                            <button onClick={()=>setVista('digestor')} className={`p-2 rounded-3xl border-2 text-left relative shadow-sm ${digDone ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-gray-200'}`}>{digDone && <div className="absolute top-2 right-2 z-10 text-emerald-600 text-xl font-black">✓</div>}<div className="h-16 w-full rounded-2xl mb-1 bg-gradient-to-br from-aguas-blue/20 to-aguas-dark/30 flex items-center justify-center text-3xl">🦠</div><span className={`font-black text-xs px-2 uppercase ${digDone ? 'text-aguas-green' : 'text-gray-700'}`}>Digestor</span></button>
-                            <button onClick={()=>setVista('gasometro')} className={`p-2 rounded-3xl border-2 text-left relative shadow-sm ${gasDone ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-gray-200'}`}>{gasDone && <div className="absolute top-2 right-2 z-10 text-emerald-600 text-xl font-black">✓</div>}<div className="h-16 w-full rounded-2xl mb-1 bg-gradient-to-br from-aguas-blue/20 to-aguas-dark/30 flex items-center justify-center text-3xl">🏗️</div><span className={`font-black text-xs px-2 uppercase ${gasDone ? 'text-aguas-green' : 'text-gray-700'}`}>Gasómetro</span></button>
-                            <div className="col-span-2 text-[10px] font-black text-gray-400 text-center mt-2">-- LÍNEA DE LODOS --</div>
-                            <button onClick={()=>setVista('area50')} className={`p-2 rounded-3xl border-2 text-left relative shadow-sm ${a50Done ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-gray-200'}`}>{a50Done && <div className="absolute top-2 right-2 z-10 text-emerald-600 text-xl font-black">✓</div>}<div className="h-16 w-full rounded-2xl mb-1 bg-gradient-to-br from-aguas-blue/20 to-aguas-dark/30 flex items-center justify-center text-3xl">🌊</div><span className={`font-black text-xs px-2 uppercase ${a50Done ? 'text-aguas-green' : 'text-gray-700'}`}>Área 50</span></button>
-                            <button onClick={()=>setVista('area60')} className={`p-2 rounded-3xl border-2 text-left relative shadow-sm ${a60Done ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-gray-200'}`}>{a60Done && <div className="absolute top-2 right-2 z-10 text-emerald-600 text-xl font-black">✓</div>}<div className="h-16 w-full rounded-2xl mb-1 bg-gradient-to-br from-aguas-blue/20 to-aguas-dark/30 flex items-center justify-center text-3xl">🌡️</div><span className={`font-black text-xs px-2 uppercase ${a60Done ? 'text-aguas-green' : 'text-gray-700'}`}>Área 60</span></button>
-                        </div>
-
-                        {/* Progreso */}
-                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                            <div className="flex justify-between items-center mb-2">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progreso del Turno</p>
-                                <p className="text-[10px] font-black text-aguas-blue">{completados} / {totalReq}</p>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                                <div className="bg-aguas-green h-2.5 rounded-full transition-all duration-700" style={{width: `${completados / totalReq * 100}%`}}></div>
-                            </div>
-                        </div>
-
-                        {todosCompletos && (
-                            <button onClick={async()=>{ await sb.from('registro_turnos').update({hora_fin: new Date().toISOString(), turno_cerrado: true}).eq('id', currentScada.id); window.location.reload(); }} className="w-full bg-aguas-dark text-white font-black py-6 rounded-3xl shadow-2xl uppercase tracking-[0.2em] hover:bg-black active:scale-95 transition-all">
-                                Cerrar Turno
-                            </button>
-                        )}
+            const ModuloCard = ({ label, done, onClick, img, className='', icono='' }) => (
+                <button onClick={onClick} className={`p-2 rounded-3xl border-2 transition-all text-left relative shadow-sm ${done ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-gray-200 hover:border-aguas-blue hover:shadow-md'} ${className}`}>
+                    {done && <div className="absolute top-3 right-3 z-10 bg-aguas-green text-white rounded-full h-8 w-8 flex items-center justify-center shadow-xl border-2 border-white font-black text-sm">✓</div>}
+                    <div className="h-28 w-full rounded-2xl overflow-hidden mb-2 shadow-inner bg-gradient-to-br from-aguas-blue/20 to-aguas-dark/30 flex items-center justify-center">
+                        {img
+                            ? <img src={img} className="w-full h-full object-cover" alt={label} loading="lazy" />
+                            : <span className="text-4xl opacity-50">{icono}</span>
+                        }
                     </div>
-                );
-            }
+                    <span className={`font-black text-xs px-2 uppercase ${done ? 'text-aguas-green' : 'text-gray-700'}`}>{label}</span>
+                </button>
+            );
 
-            const loaderHTML = <div className="fixed inset-0 bg-aguas-dark/90 z-50 flex flex-col items-center justify-center text-white backdrop-blur-sm"><div className="text-4xl animate-spin mb-6 text-aguas-yellow">⚙️</div><h2 className="font-black tracking-[0.3em] uppercase">Procesando...</h2></div>;
+            const navTo = (modulo) => { setModuloDestino(modulo); setVista('riesgos'); };
 
-            if (vista === 'scada') return <VistaScada datosGuardados={currentScada} prevData={prevData.turno} onSave={handleSaveScada} onBack={()=>setVista('hub')} />;
-            
-            // Logística
-            if (vista === 'entrega') return <div>{isSaving && loaderHTML}<FormularioEntrega onTerminado={handleSaveEnt} prevData={prevData.entrega}/></div>;
-            if (vista === 'totalizadores') return <div>{isSaving && loaderHTML}<FormularioTotalizadores onTerminado={handleSaveTot} prevData={prevData.totalizadores}/></div>;
-            if (vista === 'generador') return <div>{isSaving && loaderHTML}<FormularioGenerador onTerminado={handleSaveGen} prevData={prevData.generador}/></div>;
+            return (
+                <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-50 pb-10 fade-in">
+                    <ToastContainer />
 
-            return <div className="p-10 text-center"><h1 className="text-xl font-black mb-4">Sección de Terreno Resumida para el Test Logístico</h1><button onClick={()=>setVista('hub')} className="px-6 py-3 bg-aguas-blue text-white rounded-xl font-bold">Volver</button></div>;
+                    {/* Header */}
+                    <div className="bg-white p-6 rounded-3xl border-t-[12px] border-aguas-blue shadow-xl">
+                        <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-4">
+                            <div className="flex items-center">
+                                <div className="w-10 h-10 bg-aguas-blue rounded-xl flex items-center justify-center shadow-md mr-3">
+                                    <span className="font-black text-white text-sm">RS</span>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-black text-aguas-dark tracking-tighter">RondaSync</h1>
+                                    <p className="text-[10px] text-aguas-green font-black uppercase tracking-widest">{shiftToken}</p>
+                                </div>
+                            </div>
+                            <button onClick={async()=>{ await sb.auth.signOut(); setUser(null); }} className="text-[10px] font-black bg-red-50 text-red-600 px-4 py-2 rounded-xl border border-red-100 hover:bg-red-100 shadow-sm transition-all">SALIR</button>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-1">Operador</p>
+                                <p className="text-sm font-bold text-gray-800 truncate max-w-[160px]">{user.email.split('@')[0]}</p>
+                            </div>
+                            <button onClick={()=>cargarDatos(false)} disabled={syncInProgress} className="bg-aguas-blue hover:bg-aguas-dark disabled:opacity-60 text-white px-4 py-2 rounded-xl text-[10px] font-black flex items-center shadow-md active:scale-95 transition-all">
+                                <span className={`mr-2 ${syncInProgress ? 'animate-spin' : ''}`}>🔄</span>
+                                {syncInProgress ? 'Sync...' : 'Sincronizar'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Supervisión y Traspaso */}
+                    <div className="space-y-3">
+                        <button onClick={() => setVista('dashboard')} className="w-full bg-white border-2 border-aguas-blue text-aguas-blue font-black py-4 rounded-2xl shadow-sm uppercase tracking-widest text-xs flex justify-center items-center hover:bg-blue-50 transition-colors mb-2"><span className="text-lg mr-2">📊</span> Módulo Supervisión y KPIs</button>
+                        <button onClick={()=>setVista('traspaso')} className="w-full flex justify-between items-center p-5 rounded-2xl border-2 bg-white border-aguas-yellow shadow-sm hover:border-amber-400 transition-all group"><div className="flex items-center space-x-4"><span className="text-2xl">📋</span><span className="font-black text-sm uppercase text-gray-800 group-hover:text-aguas-blue">Traspaso de Turno</span></div><span className="text-[10px] bg-aguas-yellow text-amber-900 px-3 py-1 rounded-lg font-black uppercase shadow-sm">Leer</span></button>
+                    </div>
+
+                    {/* Administración */}
+                    <div>
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mt-6 mb-3 border-b border-gray-200 pb-2">Módulos del Turno Actual</h3>
+                        <div className="space-y-3">
+                            <button onClick={()=>setVista('scada')} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${scadaDone ? 'bg-emerald-50 border-aguas-green shadow-inner' : 'bg-white border-gray-200 shadow-sm hover:border-aguas-blue'}`}>
+                                <div className="flex items-center space-x-4"><span className="text-2xl">{scadaDone ? '🔒' : '🖥️'}</span><span className={`font-black text-sm uppercase ${scadaDone ? 'text-aguas-green' : 'text-gray-800'}`}>SCADA Inicial</span></div>
+                                <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${scadaDone ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800 shadow-sm'}`}>{scadaDone ? 'Ver' : 'Llenar'}</span>
+                            </button>
+                            <button onClick={()=>setVista('entrega')} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${entDone ? 'bg-emerald-50 border-aguas-green shadow-inner' : 'bg-white border-gray-200 shadow-sm hover:border-aguas-blue'}`}>
+                                <div className="flex items-center space-x-4"><span className="text-2xl">📦</span><span className={`font-black text-sm uppercase ${entDone ? 'text-aguas-green' : 'text-gray-800'}`}>Stock y Entregas</span></div>
+                                <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${entDone ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800 shadow-sm'}`}>{entDone ? 'Ver' : 'Llenar'}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Condicionales Especiales */}
+                    {(isNoche || isMiercolesDia) && (
+                        <div className="space-y-3 mt-4">
+                            <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-widest px-2 mb-3 border-b border-orange-200 pb-2">Tareas Especiales de Turno</h3>
+                            {isNoche && (
+                                <button onClick={()=>setVista('totalizadores')} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${totDone ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-fuchsia-300 hover:border-fuchsia-500'}`}>
+                                    <div className="flex items-center space-x-4"><span className="text-2xl">⏱️</span><span className={`font-black text-sm uppercase ${totDone ? 'text-aguas-green' : 'text-fuchsia-800'}`}>Totalizadores (00:30)</span></div>
+                                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${totDone ? 'bg-emerald-100 text-emerald-800' : 'bg-fuchsia-100 text-fuchsia-800'}`}>{totDone ? 'Ver' : 'Llenar'}</span>
+                                </button>
+                            )}
+                            {isMiercolesDia && (
+                                <button onClick={()=>setVista('generador')} className={`w-full flex justify-between items-center p-5 rounded-2xl border-2 transition-all ${genDone ? 'bg-emerald-50 border-aguas-green' : 'bg-white border-orange-300 hover:border-orange-500'}`}>
+                                    <div className="flex items-center space-x-4"><span className="text-2xl">⚡</span><span className={`font-black text-sm uppercase ${genDone ? 'text-aguas-green' : 'text-orange-800'}`}>Prueba Generador</span></div>
+                                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${genDone ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'}`}>{genDone ? 'Ver' : 'Llenar'}</span>
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Biogás */}
+                    <div>
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3 mt-6 border-b border-gray-200 pb-2">Circuito de Biogás</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <ModuloCard label="Digestor"   done={digDone}  onClick={()=>navTo('digestor')}   img={urlDigestor}   />
+                            <ModuloCard label="Gasómetro"  done={gasDone}  onClick={()=>navTo('gasometro')}  img={urlGasometro}  />
+                            <ModuloCard label="Compresores" done={compDone} onClick={()=>navTo('compresores')} img={urlCompresores} />
+                            <ModuloCard label="Calderas"   done={caldDone} onClick={()=>navTo('calderas')}   img={urlCalderas}   />
+                            <ModuloCard label="Antorchas y GLP" done={antDone} onClick={()=>navTo('antorchas')} img={urlAntorchas} className="col-span-2" />
+                        </div>
+                    </div>
+
+                    {/* Lodos */}
+                    <div>
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3 mt-6 border-b border-gray-200 pb-2">Línea de Lodos</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <ModuloCard label="Área 50" done={a50Done} onClick={()=>navTo('area50')} icono="🌊" />
+                            <ModuloCard label="Área 60" done={a60Done} onClick={()=>navTo('area60')} icono="🌡️" />
+                            <ModuloCard label="Área 70" done={a70Done} onClick={()=>navTo('area70')} icono="⚙️" className="col-span-2" />
+                        </div>
+                    </div>
+
+                    {/* Progreso */}
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-center mb-2">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progreso del Turno</p>
+                            <p className="text-[10px] font-black text-aguas-blue">{completados} / {totalReq}</p>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div className="bg-aguas-green h-2.5 rounded-full transition-all duration-700" style={{width: `${completados / totalReq * 100}%`}}></div>
+                        </div>
+                    </div>
+
+                    {/* Cierre */}
+                    {todosCompletos && (
+                        <button onClick={async()=>{ 
+                            setIsSaving(true);
+                            try {
+                                await sb.from('registro_turnos').update({hora_fin: new Date().toISOString(), turno_cerrado: true}).eq('id', currentScada.id);
+                                setVista('turno_cerrado');
+                            } catch(e) {
+                                toast('Error al cerrar turno', 'error');
+                            } finally {
+                                setIsSaving(false);
+                            }
+                        }} className="w-full bg-aguas-dark text-white font-black py-6 rounded-3xl shadow-2xl uppercase tracking-[0.2em] hover:bg-black active:scale-95 transition-all">
+                            Revisar y Cerrar Turno
+                        </button>
+                    )}
+                </div>
+            );
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
