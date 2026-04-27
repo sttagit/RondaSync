@@ -15,9 +15,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // ==========================================
-        // CONFIGURACIÓN DE SUPABASE
-        // ==========================================
         const SUPABASE_URL = 'https://cbvipsjpvlgyipifidyo.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_-9xy9fwszhg5RMqlilNn-A_wnK2VGCb';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -28,9 +25,6 @@
             return <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 rounded font-bold">Ant: {valor}</span>;
         };
 
-        // ==========================================
-        // COMPONENTE: MULTI-FOTO UPLOADER
-        // ==========================================
         function MultiFotoUploader({ idCampo, turnoId, onFotosActualizadas, titulo }) {
             const [fotos, setFotos] = useState([]);
             const [subiendoIndex, setSubiendoIndex] = useState(null);
@@ -98,9 +92,6 @@
             );
         }
 
-        // ==========================================
-        // COMPONENTE: LOGIN
-        // ==========================================
         function PantallaLogin() {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -133,9 +124,6 @@
             );
         }
 
-        // ==========================================
-        // DASHBOARD SUPERVISIÓN / KPIS Y BITÁCORA
-        // ==========================================
         function VistaDashboard({ onBack }) {
             const [data, setData] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -150,9 +138,7 @@
                         .order('created_at', { ascending: false })
                         .limit(10);
                     
-                    if (!error && turnos) {
-                        setData(turnos);
-                    }
+                    if (!error && turnos) setData(turnos);
                     setLoading(false);
                 };
                 fetchHistory();
@@ -161,7 +147,6 @@
             useEffect(() => {
                 if (!loading && chartRef.current && data.length > 0) {
                     if (chartInstance.current) chartInstance.current.destroy();
-                    
                     const chartData = [...data].reverse();
                     const labels = chartData.map(d => new Date(d.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
                     const presionData = chartData.map(d => d.inspeccion_gasometro?.[0]?.presion_inter_membrana_mbar || 0);
@@ -191,12 +176,10 @@
 
             const totalRondas = data.length;
             const fallasLel = data.filter(t => t.inspeccion_gasometro?.[0]?.lectura_lel_porcentaje > 0).length;
-            
             const duracionesValidas = data.map(t => {
                 if(t.hora_inicio && t.created_at) return (new Date(t.created_at) - new Date(t.hora_inicio)) / 60000;
                 return 0;
             }).filter(d => d > 0);
-            
             const avgTime = duracionesValidas.length > 0 ? Math.round(duracionesValidas.reduce((a,b)=>a+b,0) / duracionesValidas.length) : '--';
 
             return (
@@ -211,35 +194,19 @@
                     ) : (
                         <>
                             <div className="grid grid-cols-3 gap-3">
-                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
-                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">Rondas Hist.</p>
-                                    <p className="text-2xl font-black text-blue-600">{totalRondas}</p>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
-                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">T. Promedio</p>
-                                    <p className="text-2xl font-black text-emerald-600">{avgTime}<span className="text-xs font-bold text-gray-400">m</span></p>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
-                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">Eventos LEL</p>
-                                    <p className={`text-2xl font-black ${fallasLel > 0 ? 'text-red-600' : 'text-gray-400'}`}>{fallasLel}</p>
-                                </div>
+                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center"><p className="text-[9px] text-gray-500 font-black uppercase mb-1">Rondas Hist.</p><p className="text-2xl font-black text-blue-600">{totalRondas}</p></div>
+                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center"><p className="text-[9px] text-gray-500 font-black uppercase mb-1">T. Promedio</p><p className="text-2xl font-black text-emerald-600">{avgTime}<span className="text-xs font-bold text-gray-400">m</span></p></div>
+                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center"><p className="text-[9px] text-gray-500 font-black uppercase mb-1">Eventos LEL</p><p className={`text-2xl font-black ${fallasLel > 0 ? 'text-red-600' : 'text-gray-400'}`}>{fallasLel}</p></div>
                             </div>
-
-                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tendencia: Presión vs Nivel</h3>
-                                <canvas ref={chartRef} id="tendenciasChart" className="w-full h-48"></canvas>
-                            </div>
-
+                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200"><h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tendencia: Presión vs Nivel</h3><canvas ref={chartRef} id="tendenciasChart" className="w-full h-48"></canvas></div>
+                            
                             <div className="space-y-4">
                                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Bitácora de Inspecciones</h3>
                                 {data.map((turno) => {
                                     const gas = turno.inspeccion_gasometro?.[0];
                                     let duracionStr = '--';
-                                    if(turno.hora_inicio && turno.created_at) {
-                                        const mins = Math.round((new Date(turno.created_at) - new Date(turno.hora_inicio)) / 60000);
-                                        duracionStr = `${mins} min`;
-                                    }
-
+                                    if(turno.hora_inicio && turno.created_at) duracionStr = `${Math.round((new Date(turno.created_at) - new Date(turno.hora_inicio)) / 60000)} min`;
+                                    
                                     const tags = [];
                                     if (gas?.estado_anclajes && gas.estado_anclajes !== 'Optimo') tags.push('Anclajes');
                                     if (gas?.lectura_lel_porcentaje > 0) tags.push(`LEL ${gas.lectura_lel_porcentaje}%`);
@@ -252,26 +219,25 @@
                                     return (
                                         <div key={turno.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
                                             <div className="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
-                                                <div>
-                                                    <p className="text-xs font-black text-gray-800">{new Date(turno.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
-                                                    <p className="text-[10px] text-blue-600 font-bold">{turno.operador_nombre}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[9px] font-black tracking-widest inline-flex items-center"><span className="mr-1">⏱️</span> {duracionStr}</span>
-                                                </div>
+                                                <div><p className="text-xs font-black text-gray-800">{new Date(turno.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p><p className="text-[10px] text-blue-600 font-bold">{turno.operador_nombre}</p></div>
+                                                <div className="text-right"><span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[9px] font-black tracking-widest inline-flex items-center"><span className="mr-1">⏱️</span> {duracionStr}</span></div>
                                             </div>
-                                            
                                             {tags.length > 0 ? (
-                                                <div className="flex flex-wrap gap-1 mb-2">
-                                                    {tags.map((t, i) => <span key={i} className="bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">{t}</span>)}
-                                                </div>
+                                                <div className="flex flex-wrap gap-1 mb-2">{tags.map((t, i) => <span key={i} className="bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">{t}</span>)}</div>
                                             ) : (
                                                 <div className="mb-2"><span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded text-[9px] font-bold uppercase">✓ Óptimo</span></div>
+                                            )}
+                                            
+                                            {turno.setpoints_ajustados && (
+                                                <div className="bg-blue-50 p-2 rounded-lg border border-blue-100 mb-2">
+                                                    <p className="text-[9px] text-blue-600 font-black uppercase mb-1">Ajustes Proceso</p>
+                                                    <p className="text-xs text-blue-900 font-medium">{turno.setpoints_ajustados}</p>
+                                                </div>
                                             )}
 
                                             <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
                                                 <p className="text-[10px] text-gray-400 font-black uppercase mb-1">Observaciones</p>
-                                                <p className="text-xs text-gray-700 font-medium italic">{gas?.observaciones || 'Sin registro de observaciones.'}</p>
+                                                <p className="text-xs text-gray-700 font-medium italic">{gas?.observaciones || 'Sin registro.'}</p>
                                             </div>
                                         </div>
                                     )
@@ -294,21 +260,22 @@
                 return (
                     <div className="p-4 max-w-md mx-auto min-h-screen font-sans">
                         <div className="bg-[#1e293b] p-4 rounded-xl text-white shadow-lg mb-6"><h2 className="text-xl font-bold">Resumen Turno Anterior</h2></div>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center"><p className="text-sm text-gray-500 font-bold">No hay registros de turnos anteriores disponibles.</p></div>
-                        <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest hover:bg-emerald-700 transition-colors">Entendido</button>
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center"><p className="text-sm text-gray-500 font-bold">No hay registros disponibles.</p></div>
+                        <button onClick={onComplete} className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl mt-10 uppercase tracking-widest hover:bg-emerald-700">Entendido</button>
                     </div>
                 );
             }
 
             const fechaTurno = new Date(turno.created_at).toLocaleString();
             const observaciones = gasometro?.observaciones || "Sin observaciones adicionales.";
+            
             const anomalias = [];
             if (gasometro?.estado_anclajes && gasometro.estado_anclajes !== 'Optimo') anomalias.push(`Anclajes: ${gasometro.estado_anclajes}`);
             if (gasometro?.lectura_lel_porcentaje > 0) anomalias.push(`LEL Detectado: ${gasometro.lectura_lel_porcentaje}%`);
             if (gasometro?.nivel_guarda_hidraulica && gasometro.nivel_guarda_hidraulica !== 'Nivel Normal') anomalias.push(`Guarda Hidráulica: ${gasometro.nivel_guarda_hidraulica}`);
             if (gasometro?.sopladores_condicion_mecanica && gasometro.sopladores_condicion_mecanica !== 'Operación Normal (Sin ruidos/vibración)') anomalias.push(`Sopladores: ${gasometro.sopladores_condicion_mecanica}`);
-            if (gasometro?.flujo_agua_trampa === false) anomalias.push(`Trampa: Sin flujo de agua`);
-            if (gasometro?.estado_valvula_corte === 'Sin candado de seguridad') anomalias.push(`Válvula Corte: Sin candado`);
+            if (gasometro?.flujo_agua_trampa === false) anomalias.push(`Trampa: Sin flujo de agua (Pérdida de sello)`);
+            if (gasometro?.estado_valvula_corte === 'Sin candado de seguridad') anomalias.push(`Válvula Corte: Sin candado LOTO`);
             if (gasometro?.estado_gabinete_electrico && !gasometro.estado_gabinete_electrico.includes('Operativo')) anomalias.push(`Gabinete: ${gasometro.estado_gabinete_electrico}`);
 
             return (
@@ -319,21 +286,36 @@
                             <div><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Operador Saliente</p><p className="text-sm font-bold text-gray-800">{turno.operador_nombre}</p><p className="text-[10px] text-gray-500 mt-1">{fechaTurno}</p></div>
                             <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-black border border-blue-200">{turno.tipo_turno}</div>
                         </div>
-                        <div className="bg-amber-50 rounded-2xl p-4 shadow-sm border border-amber-200"><h3 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">📝</span> Observaciones del Turno</h3><p className="text-sm text-amber-900 font-medium italic">"{observaciones}"</p></div>
+
+                        {turno.setpoints_ajustados && (
+                            <div className="bg-blue-50 rounded-2xl p-4 shadow-sm border border-blue-200">
+                                <h3 className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">⚙️</span> Ajustes Operacionales / Setpoints</h3>
+                                <p className="text-sm text-blue-900 font-medium italic">"{turno.setpoints_ajustados}"</p>
+                            </div>
+                        )}
+
+                        <div className="bg-amber-50 rounded-2xl p-4 shadow-sm border border-amber-200">
+                            <h3 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">📝</span> Observaciones Mecánicas</h3>
+                            <p className="text-sm text-amber-900 font-medium italic">"{observaciones}"</p>
+                        </div>
+                        
                         {anomalias.length > 0 && (
-                            <div className="bg-red-50 rounded-2xl p-4 shadow-sm border border-red-200"><h3 className="text-[10px] font-black text-red-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">⚠️</span> Atención Requerida (Heredado)</h3><ul className="space-y-2">{anomalias.map((anom, idx) => (<li key={idx} className="text-xs text-red-700 font-bold bg-white p-2 rounded border border-red-100">• {anom}</li>))}</ul></div>
+                            <div className="bg-red-50 rounded-2xl p-4 shadow-sm border border-red-200">
+                                <h3 className="text-[10px] font-black text-red-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">⚠️</span> Atención Requerida (Alarmas)</h3>
+                                <ul className="space-y-2">{anomalias.map((anom, idx) => (<li key={idx} className="text-xs text-red-700 font-bold bg-white p-2 rounded border border-red-100">• {anom}</li>))}</ul>
+                            </div>
                         )}
                         
                         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">SCADA Inicial del Turno Saliente (Ref. de 12hrs)</h3>
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">SCADA Inicial del Turno Saliente</h3>
                             <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-xs">
                                 <div><span className="text-gray-500 block text-[9px] uppercase">Nivel Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_nivel_cm || '-'} cm</span></div>
-                                <div><span className="text-gray-500 block text-[9px] uppercase">Pres. Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_presion_mbar || '-'} mbar</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Pres. Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_presion_mbar || '-'} mb</span></div>
                                 <div><span className="text-gray-500 block text-[9px] uppercase">Temp Dig.</span><span className="font-bold text-gray-800">{turno.scada_dig_temp_c || '-'} °C</span></div>
                                 
                                 <div><span className="text-gray-500 block text-[9px] uppercase">Nivel Gas.</span><span className="font-bold text-gray-800">{turno.scada_nivel_gasometro || '-'} %</span></div>
                                 <div><span className="text-gray-500 block text-[9px] uppercase">Pres. Gas.</span><span className="font-bold text-gray-800">{turno.scada_presion_mbar || '-'} mb</span></div>
-                                <div><span className="text-gray-500 block text-[9px] uppercase">Flujo Comp.</span><span className="font-bold text-gray-800">{turno.scada_flujo_biogas_nm3h || '-'} m³/h</span></div>
+                                <div><span className="text-gray-500 block text-[9px] uppercase">Flujo Comp.</span><span className="font-bold text-gray-800">{turno.scada_flujo_biogas_nm3h || '-'}</span></div>
                                 
                                 <div><span className="text-gray-500 block text-[9px] uppercase">Pres. Imp.</span><span className="font-bold text-gray-800">{turno.scada_comp_presion_imp_mbar || '-'} mb</span></div>
                                 <div><span className="text-gray-500 block text-[9px] uppercase">Flujo Cald.</span><span className="font-bold text-gray-800">{turno.scada_cald_flujo_m3h || '-'} </span></div>
@@ -370,11 +352,11 @@
                         <div>
                             <h4 className="text-xs font-black text-emerald-600 uppercase mb-3 border-b pb-1">3. Compresores y Consumos</h4>
                             <div className="grid grid-cols-2 gap-3 mb-3">
-                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Flujo Comp. (m³/h)</label><Fantasma valor={prevData?.scada_flujo_biogas_nm3h} /></div><input type="number" value={scada.comp_flujo||''} onChange={e => setScada({...scada, comp_flujo: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
-                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Pres. Imp. (mbar)</label><Fantasma valor={prevData?.scada_comp_presion_imp_mbar} /></div><input type="number" value={scada.comp_pres_imp||''} onChange={e => setScada({...scada, comp_pres_imp: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Flujo Comp.</label><Fantasma valor={prevData?.scada_flujo_biogas_nm3h} /></div><input type="number" value={scada.comp_flujo||''} onChange={e => setScada({...scada, comp_flujo: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Pres. Imp.</label><Fantasma valor={prevData?.scada_comp_presion_imp_mbar} /></div><input type="number" value={scada.comp_pres_imp||''} onChange={e => setScada({...scada, comp_pres_imp: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Flujo Calderas</label><Fantasma valor={prevData?.scada_cald_flujo_m3h} /></div><input type="number" value={scada.cald_flujo||''} onChange={e => setScada({...scada, cald_flujo: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
+                                <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Flujo Cald.</label><Fantasma valor={prevData?.scada_cald_flujo_m3h} /></div><input type="number" value={scada.cald_flujo||''} onChange={e => setScada({...scada, cald_flujo: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
                                 <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] text-gray-500 font-bold uppercase">Flujo Antorchas</label><Fantasma valor={prevData?.scada_ant_flujo_m3h} /></div><input type="number" value={scada.ant_flujo||''} onChange={e => setScada({...scada, ant_flujo: e.target.value})} className="w-full border-2 border-white shadow-sm p-3 rounded-xl text-center font-bold" /></div>
                             </div>
                         </div>
@@ -500,12 +482,14 @@
         }
 
         // ==========================================
-        // COMPONENTE: RESUMEN FINAL
+        // COMPONENTE: RESUMEN FINAL (CON SETPOINTS)
         // ==========================================
-        function VistaResumenFinal({ turnoContexto, datosGasometro, setDatosGasometro, onConfirm, onBack, loading }) {
+        function VistaResumenFinal({ turnoContexto, datosGasometro, setDatosGasometro, onConfirm, onBack, loading, huboAjustes, setHuboAjustes, ajustesOperacionales, setAjustesOperacionales }) {
             const actualizarObservacion = (e) => {
                 if(datosGasometro) setDatosGasometro({...datosGasometro, observaciones: e.target.value});
             };
+
+            const puedeGuardar = (!huboAjustes) || (huboAjustes && ajustesOperacionales.trim() !== '');
 
             return (
                 <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-100 pb-20">
@@ -514,10 +498,10 @@
                         <h2 className="text-lg font-black uppercase tracking-tight">Confirmación de Ronda</h2>
                     </div>
 
-                    <p className="text-xs text-gray-500 font-medium px-2">Revise detalladamente los datos registrados. Puede editar las observaciones generales antes de firmar el reporte.</p>
+                    <p className="text-xs text-gray-500 font-medium px-2">Revise los datos registrados e ingrese los ajustes operacionales realizados durante el turno.</p>
 
                     <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200">
-                        <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-b pb-2 mb-3">Resumen SCADA</h3>
+                        <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-b pb-2 mb-3">Resumen SCADA Inicial</h3>
                         <div className="grid grid-cols-2 gap-y-3 text-xs">
                             <div className="text-gray-500">Nivel Dig.: <b className="text-gray-800">{turnoContexto?.scada?.dig_nivel || '-'} cm</b></div>
                             <div className="text-gray-500">Pres. Dig.: <b className="text-gray-800">{turnoContexto?.scada?.dig_presion || '-'} mbar</b></div>
@@ -525,6 +509,27 @@
                             <div className="text-gray-500">Pres. Gas.: <b className="text-gray-800">{turnoContexto?.scada?.gas_presion || '-'} mbar</b></div>
                             <div className="text-gray-500">Flujo Comp.: <b className="text-gray-800">{turnoContexto?.scada?.comp_flujo || '-'} m3/h</b></div>
                         </div>
+                    </div>
+
+                    {/* NUEVO MÓDULO: AJUSTES OPERACIONALES */}
+                    <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200">
+                        <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-b pb-2 mb-3">Estrategia Operacional</h3>
+                        <label className="flex items-center space-x-3 cursor-pointer mb-3">
+                            <input type="checkbox" checked={huboAjustes} onChange={e=>setHuboAjustes(e.target.checked)} className="h-6 w-6 text-blue-600 rounded-lg" />
+                            <span className="text-xs font-bold text-gray-700">Se modificaron setpoints o flujos en este turno</span>
+                        </label>
+                        {huboAjustes && (
+                            <textarea
+                                value={ajustesOperacionales}
+                                onChange={e=>setAjustesOperacionales(e.target.value)}
+                                className="w-full border-2 border-blue-200 bg-blue-50 p-4 rounded-2xl text-sm font-medium text-blue-900 focus:outline-none focus:border-blue-400"
+                                rows="3"
+                                placeholder="Ej: Se redujo flujo a caldera 1 a 120 m3/h por alta T° en motor..."
+                            ></textarea>
+                        )}
+                        {huboAjustes && ajustesOperacionales.trim() === '' && (
+                            <p className="text-[10px] text-red-600 font-bold mt-1">⚠️ Debe detallar los ajustes realizados.</p>
+                        )}
                     </div>
 
                     {datosGasometro ? (
@@ -541,8 +546,8 @@
                                 <div className="flex justify-between"><span className="text-gray-500">Tablero Eléctrico:</span> <b className={datosGasometro.gabinete.includes('Operativo') ? "text-emerald-600 truncate max-w-[150px]" : "text-red-600 truncate max-w-[150px]"}>{datosGasometro.gabinete}</b></div>
                             </div>
                             <div className="mt-5">
-                                <label className="text-[10px] text-gray-500 font-black uppercase mb-2 block tracking-widest">Observaciones y Anomalias (Editable)</label>
-                                <textarea value={datosGasometro.observaciones} onChange={actualizarObservacion} className="w-full border-2 border-amber-200 bg-amber-50 p-4 rounded-2xl text-sm font-medium text-amber-900 focus:outline-none focus:border-amber-400" rows="4" placeholder="Agregue detalles finales..."></textarea>
+                                <label className="text-[10px] text-gray-500 font-black uppercase mb-2 block tracking-widest">Observaciones Mecánicas (Editable)</label>
+                                <textarea value={datosGasometro.observaciones} onChange={actualizarObservacion} className="w-full border-2 border-amber-200 bg-amber-50 p-4 rounded-2xl text-sm font-medium text-amber-900 focus:outline-none focus:border-amber-400" rows="4" placeholder="Agregue detalles finales de mantenimiento..."></textarea>
                             </div>
                         </div>
                     ) : (
@@ -553,7 +558,7 @@
                     )}
 
                     <div className="space-y-3 pt-4">
-                        <button onClick={onConfirm} disabled={loading} className="w-full bg-emerald-600 text-white font-black py-6 rounded-3xl shadow-xl uppercase tracking-[0.1em] transition-all transform active:scale-95">
+                        <button onClick={onConfirm} disabled={loading || !puedeGuardar} className={`w-full text-white font-black py-6 rounded-3xl shadow-xl uppercase tracking-[0.1em] transition-all transform active:scale-95 ${(!loading && puedeGuardar) ? 'bg-emerald-600' : 'bg-gray-400 cursor-not-allowed'}`}>
                             {loading ? 'FIRMANDO...' : 'FIRMADO Y CONFORME - GUARDAR'}
                         </button>
                         <button onClick={onBack} disabled={loading} className="w-full bg-gray-300 text-gray-700 font-black py-4 rounded-3xl uppercase tracking-widest transition-all">
@@ -692,7 +697,7 @@
                             <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 2</label><select onChange={e=>setFd({...fd, soplador_2: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
                         </div>
                         <div className="mb-4"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Condición Mecánica</label><select onChange={e=>setFd({...fd, condicion_sopladores: e.target.value})} className={`w-full border-2 p-4 rounded-xl text-xs font-black transition-colors ${fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-50'}`}>{estadosAUsar.map(estado => <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>)}</select></div>
-                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores / Damper" />
+                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores/Damper" />
                     </div>
 
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
@@ -734,8 +739,14 @@
             const [pantallaActiva, setPantallaActiva] = useState('hub');
             const [turnoContexto, setTurnoContexto] = useState({ shift: '', scada: null, turnoIdBd: null });
             const [areasStatus, setAreasStatus] = useState({ gasometro: false });
+            
             const [datosGasometroTemp, setDatosGasometroTemp] = useState(null);
             const [fotosGasometroTemp, setFotosGasometroTemp] = useState(null);
+            
+            // Nuevos estados para Ajustes Operacionales
+            const [huboAjustes, setHuboAjustes] = useState(false);
+            const [ajustesOperacionales, setAjustesOperacionales] = useState('');
+
             const [isSavingDb, setIsSavingDb] = useState(false);
             const [valoresAnteriores, setValoresAnteriores] = useState({ turno: null, gasometro: null });
             const [listaFallas, setListaFallas] = useState([]);
@@ -743,10 +754,12 @@
 
             const cargarMemoriaOperativa = async () => {
                 try {
-                    const { data: turnos } = await supabaseClient.from('registro_turnos').select('*').order('created_at', { ascending: false }).limit(1);
-                    const { data: gasometros } = await supabaseClient.from('inspeccion_gasometro').select('*').order('created_at', { ascending: false }).limit(1);
-                    setValoresAnteriores({ turno: turnos?.[0] || null, gasometro: gasometros?.[0] || null });
-                } catch (error) { console.log("Offline"); }
+                    const { data: turnos, error: err1 } = await supabaseClient.from('registro_turnos').select('*').order('created_at', { ascending: false }).limit(1);
+                    if (err1) console.error("Supabase Error Turnos:", err1);
+                    const { data: gasometros, error: err2 } = await supabaseClient.from('inspeccion_gasometro').select('*').order('created_at', { ascending: false }).limit(1);
+                    if (err2) console.error("Supabase Error Gasometro:", err2);
+                    setValoresAnteriores({ turno: turnos && turnos.length > 0 ? turnos[0] : null, gasometro: gasometros && gasometros.length > 0 ? gasometros[0] : null });
+                } catch (error) { console.error("Error crítico de red:", error); }
             };
 
             const cargarCatalogos = async () => {
@@ -794,7 +807,8 @@
                         scada_flujo_biogas_nm3h: turnoContexto.scada.comp_flujo || null, scada_dig_nivel_cm: turnoContexto.scada.dig_nivel || null,
                         scada_dig_presion_mbar: turnoContexto.scada.dig_presion || null, scada_dig_temp_c: turnoContexto.scada.dig_temp || null,
                         scada_comp_presion_imp_mbar: turnoContexto.scada.comp_pres_imp || null, scada_cald_flujo_m3h: turnoContexto.scada.cald_flujo || null,
-                        scada_ant_flujo_m3h: turnoContexto.scada.ant_flujo || null, atex_confirmado: true, estado_ronda: 'Completada', hora_fin: new Date()
+                        scada_ant_flujo_m3h: turnoContexto.scada.ant_flujo || null, atex_confirmado: true, estado_ronda: 'Completada', hora_fin: new Date(),
+                        setpoints_ajustados: huboAjustes ? ajustesOperacionales : null
                     }]).select();
 
                     if (!errT && areasStatus.gasometro) {
@@ -823,7 +837,7 @@
                     {pantallaActiva === 'dashboard' && <VistaDashboard onBack={() => setPantallaActiva('hub')} />}
                     {pantallaActiva === 'instalaciones' && <MenuInstalaciones areasDone={areasStatus} irAGasometro={() => setPantallaActiva('form_gasometro')} revisarYFinalizar={abrirResumen} />}
                     {pantallaActiva === 'form_gasometro' && <FormularioGasometro turnoId={turnoContexto.turnoIdBd} prevData={valoresAnteriores.gasometro} listaFallas={listaFallas} listaEstadosSopladores={listaEstadosSopladores} onTerminado={(d, f) => { setDatosGasometroTemp(d); setFotosGasometroTemp(f); setAreasStatus({...areasStatus, gasometro: true}); setPantallaActiva('instalaciones'); }} />}
-                    {pantallaActiva === 'resumen_final' && <VistaResumenFinal turnoContexto={turnoContexto} datosGasometro={datosGasometroTemp} setDatosGasometro={setDatosGasometroTemp} onConfirm={manejarFinalizacionTotal} onBack={volverAInstalaciones} loading={isSavingDb} />}
+                    {pantallaActiva === 'resumen_final' && <VistaResumenFinal turnoContexto={turnoContexto} datosGasometro={datosGasometroTemp} setDatosGasometro={setDatosGasometroTemp} onConfirm={manejarFinalizacionTotal} onBack={volverAInstalaciones} loading={isSavingDb} huboAjustes={huboAjustes} setHuboAjustes={setHuboAjustes} ajustesOperacionales={ajustesOperacionales} setAjustesOperacionales={setAjustesOperacionales} />}
                     {pantallaActiva === 'fin' && (
                         <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#1e1e1e] text-center text-white">
                             <div className="bg-[#2a2a2a] p-10 rounded-[3rem] border border-zinc-700 shadow-2xl">
