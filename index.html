@@ -172,7 +172,6 @@
                     </div>
 
                     <div className="space-y-4">
-                        {/* Info General */}
                         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center">
                             <div>
                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Operador Saliente</p>
@@ -184,13 +183,11 @@
                             </div>
                         </div>
 
-                        {/* Observaciones Generales */}
                         <div className="bg-amber-50 rounded-2xl p-4 shadow-sm border border-amber-200">
                             <h3 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">📝</span> Observaciones del Turno</h3>
                             <p className="text-sm text-amber-900 font-medium italic">"{observaciones}"</p>
                         </div>
 
-                        {/* Anomalías Detectadas (Solo aparece si hay fallas) */}
                         {anomalias.length > 0 && (
                             <div className="bg-red-50 rounded-2xl p-4 shadow-sm border border-red-200">
                                 <h3 className="text-[10px] font-black text-red-800 uppercase tracking-widest mb-2 flex items-center"><span className="mr-2">⚠️</span> Atención Requerida (Heredado)</h3>
@@ -202,7 +199,6 @@
                             </div>
                         )}
 
-                        {/* Resumen SCADA Clave */}
                         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Niveles SCADA Finales</h3>
                             <div className="grid grid-cols-2 gap-3 text-xs">
@@ -284,7 +280,7 @@
         }
 
         // ==========================================
-        // COMPONENTE: HUB CENTRAL (ACTUALIZADO PARA PASAR PREVVALORES)
+        // COMPONENTE: HUB CENTRAL
         // ==========================================
         function HubCentral({ userEmail, prevValores, avanzarAInstalaciones }) {
             const [fechaHora, setFechaHora] = useState(new Date());
@@ -623,10 +619,19 @@
 
             const cargarMemoriaOperativa = async () => {
                 try {
-                    const { data: turnos } = await supabaseClient.from('registro_turnos').select('*').order('created_at', { ascending: false }).limit(1);
-                    const { data: gasometros } = await supabaseClient.from('inspeccion_gasometro').select('*').order('created_at', { ascending: false }).limit(1);
-                    setValoresAnteriores({ turno: turnos?.[0] || null, gasometro: gasometros?.[0] || null });
-                } catch (error) { console.log("Offline"); }
+                    const { data: turnos, error: err1 } = await supabaseClient.from('registro_turnos').select('*').order('created_at', { ascending: false }).limit(1);
+                    if (err1) console.error("Supabase Error Turnos:", err1);
+                    
+                    const { data: gasometros, error: err2 } = await supabaseClient.from('inspeccion_gasometro').select('*').order('created_at', { ascending: false }).limit(1);
+                    if (err2) console.error("Supabase Error Gasometro:", err2);
+
+                    setValoresAnteriores({ 
+                        turno: turnos && turnos.length > 0 ? turnos[0] : null, 
+                        gasometro: gasometros && gasometros.length > 0 ? gasometros[0] : null 
+                    });
+                } catch (error) { 
+                    console.error("Error crítico de red:", error); 
+                }
             };
 
             const cargarCatalogos = async () => {
