@@ -124,7 +124,7 @@
                         </div>
                         <h2 className="text-3xl font-bold mb-6">Bienvenido</h2>
                         <form onSubmit={manejarLogin} className="space-y-5">
-                            <div><label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Correo Electronico</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 focus:border-amber-500 outline-none transition-all" required /></div>
+                            <div><label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Correo Electrónico</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 focus:border-amber-500 outline-none transition-all" required /></div>
                             <div className="relative"><label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Contraseña</label><input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1e1e1e] border border-zinc-700 rounded-xl p-4 focus:border-amber-500 outline-none transition-all" required /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-11 text-zinc-500">👁️</button></div>
                             <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-900 font-black py-4 rounded-xl uppercase tracking-widest shadow-xl transition-all">{loading ? 'Verificando...' : 'Entrar al Sistema'}</button>
                         </form>
@@ -134,7 +134,170 @@
         }
 
         // ==========================================
-        // VISTAS PREVIAS (RESUMEN DINÁMICO, SCADA, RIESGOS)
+        // DASHBOARD SUPERVISIÓN / KPIS Y BITÁCORA
+        // ==========================================
+        function VistaDashboard({ onBack }) {
+            const [data, setData] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                const fetchHistory = async () => {
+                    const { data: turnos, error } = await supabaseClient
+                        .from('registro_turnos')
+                        .select('*, inspeccion_gasometro(*)')
+                        .order('created_at', { ascending: false })
+                        .limit(10); // Carga las ultimas 10 rondas
+                    
+                    if (!error && turnos) {
+                        setData(turnos);
+                    }
+                    setLoading(false);
+                };
+                fetchHistory();
+            }, []);
+
+            useEffect(() => {
+                if (!loading && chartRef.current && data.length > 0) {
+                    if (chartInstance.current) chartInstance.current.destroy();
+                    
+                    const chartData = [...data].reverse();
+                    const labels = chartData.map(d => new Date(d.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                    const presionData = chartData.map(d => d.inspeccion_gasometro?.[0]?.presion_inter_membrana_mbar || 0);
+                    const nivelData = chartData.map(d => d.scada_nivel_gasometro || 0);
+
+                    const ctx = chartRef.current.getContext('2d');
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Presión (mbar)', data: presionData, borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', yAxisID: 'y', tension: 0.3, fill: true },
+                                { label: 'Nivel SCADA (%)', data: nivelData, borderColor: 'rgb(245, 158, 11)', borderDash: [5, 5], yAxisID: 'y1', tension: 0.3 }
+                            ]
+                        },
+                        options: {
+                            responsive: true, interaction: { mode: 'index', intersect: false },
+                            scales: {
+                                y: { type: 'linear', display: true, position: 'left', title: {display: true, text: 'mbar'} },
+                                y1: { type: 'linear', display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display: true, text: '%'} },
+                            }
+                        }
+                    });
+                }
+                return () => { if (chartInstance.current) chartInstance.current.destroy(); }
+            }, [data, loading]);
+
+            // Calculo de KPIs de Gestión
+            const totalRondas = data.length;
+            const fallasLel = data.filter(t => t.inspeccion_gasometro?.[0]?.lectura_lel_porcentaje > 0).length;
+            
+            // Calcular tiempo promedio de ronda
+            const duracionesValidas = data.map(t => {
+                if(t.hora_inicio && t.created_at) {
+                    return (new Date(t.created_at) - new Date(t.hora_inicio)) / 60000; // a minutos
+                }
+                return 0;
+            }).filter(d => d > 0);
+            
+            const avgTime = duracionesValidas.length > 0 
+                ? Math.round(duracionesValidas.reduce((a,b)=>a+b,0) / duracionesValidas.length) 
+                : '--';
+
+            return (
+                <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-100 pb-20">
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl flex items-center justify-between sticky top-0 z-20">
+                        <div className="flex items-center"><span className="text-2xl mr-3">📊</span><h2 className="text-lg font-black uppercase tracking-tight">Supervisión</h2></div>
+                        <button onClick={onBack} className="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1 rounded-full font-bold">Volver</button>
+                    </div>
+
+                    {loading ? (
+                        <div className="text-center py-20 text-gray-500 font-bold animate-pulse">Cargando Historial...</div>
+                    ) : (
+                        <>
+                            {/* Tarjetas KPI Mantenimiento & Gestión */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
+                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">Rondas Hist.</p>
+                                    <p className="text-2xl font-black text-blue-600">{totalRondas}</p>
+                                </div>
+                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
+                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">T. Promedio</p>
+                                    <p className="text-2xl font-black text-emerald-600">{avgTime}<span className="text-xs font-bold text-gray-400">m</span></p>
+                                </div>
+                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
+                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">Eventos LEL</p>
+                                    <p className={`text-2xl font-black ${fallasLel > 0 ? 'text-red-600' : 'text-gray-400'}`}>{fallasLel}</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tendencia: Presión vs Nivel</h3>
+                                <canvas ref={chartRef} id="tendenciasChart" className="w-full h-48"></canvas>
+                            </div>
+
+                            {/* Bitácora de Rondas Detallada */}
+                            <div className="space-y-4">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Bitácora de Inspecciones</h3>
+                                {data.map((turno) => {
+                                    const gas = turno.inspeccion_gasometro?.[0];
+                                    
+                                    // Calculo de duración individual
+                                    let duracionStr = '--';
+                                    if(turno.hora_inicio && turno.created_at) {
+                                        const mins = Math.round((new Date(turno.created_at) - new Date(turno.hora_inicio)) / 60000);
+                                        duracionStr = `${mins} min`;
+                                    }
+
+                                    // Extraer tags de fallas
+                                    const tags = [];
+                                    if (gas?.estado_anclajes && gas.estado_anclajes !== 'Optimo') tags.push('Anclajes');
+                                    if (gas?.lectura_lel_porcentaje > 0) tags.push(`LEL ${gas.lectura_lel_porcentaje}%`);
+                                    if (gas?.nivel_guarda_hidraulica !== 'Nivel Normal') tags.push('Guarda');
+                                    if (gas?.sopladores_condicion_mecanica && gas.sopladores_condicion_mecanica !== 'Operación Normal (Sin ruidos/vibración)') tags.push('Sopladores');
+                                    if (gas?.flujo_agua_trampa === false) tags.push('Trampa');
+                                    if (gas?.estado_valvula_corte === 'Sin candado de seguridad') tags.push('Válvula LOTO');
+                                    if (gas?.estado_gabinete_electrico && !gas.estado_gabinete_electrico.includes('Operativo')) tags.push('Gabinete');
+
+                                    return (
+                                        <div key={turno.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+                                            <div className="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
+                                                <div>
+                                                    <p className="text-xs font-black text-gray-800">{new Date(turno.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
+                                                    <p className="text-[10px] text-blue-600 font-bold">{turno.operador_nombre}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[9px] font-black tracking-widest inline-flex items-center"><span className="mr-1">⏱️</span> {duracionStr}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Tags de Fallas */}
+                                            {tags.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1 mb-2">
+                                                    {tags.map((t, i) => <span key={i} className="bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">{t}</span>)}
+                                                </div>
+                                            ) : (
+                                                <div className="mb-2"><span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded text-[9px] font-bold uppercase">✓ Óptimo</span></div>
+                                            )}
+
+                                            {/* Observaciones */}
+                                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                                <p className="text-[10px] text-gray-400 font-black uppercase mb-1">Observaciones</p>
+                                                <p className="text-xs text-gray-700 font-medium italic">{gas?.observaciones || 'Sin registro de observaciones.'}</p>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        // ==========================================
+        // VISTAS PREVIAS (RESUMEN TRASPASO, SCADA, RIESGOS)
         // ==========================================
         function VistaResumen({ prevValores, onComplete }) {
             const turno = prevValores?.turno;
@@ -246,151 +409,6 @@
         }
 
         // ==========================================
-        // COMPONENTE: DASHBOARD HISTÓRICO Y KPIS
-        // ==========================================
-        function VistaDashboard({ onBack }) {
-            const [data, setData] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const chartRef = useRef(null);
-            const chartInstance = useRef(null);
-
-            useEffect(() => {
-                const fetchHistory = async () => {
-                    const { data: turnos, error } = await supabaseClient
-                        .from('registro_turnos')
-                        .select('*, inspeccion_gasometro(*)')
-                        .order('created_at', { ascending: false })
-                        .limit(10);
-                    
-                    if (!error && turnos) {
-                        setData(turnos);
-                    }
-                    setLoading(false);
-                };
-                fetchHistory();
-            }, []);
-
-            useEffect(() => {
-                if (!loading && chartRef.current && data.length > 0) {
-                    if (chartInstance.current) chartInstance.current.destroy();
-                    
-                    // Preparar datos para el gráfico (invertimos para que el más viejo esté a la izquierda)
-                    const chartData = [...data].reverse();
-                    const labels = chartData.map(d => new Date(d.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-                    const presionData = chartData.map(d => d.inspeccion_gasometro?.[0]?.presion_inter_membrana_mbar || 0);
-                    const nivelData = chartData.map(d => d.scada_nivel_gasometro || 0);
-
-                    const ctx = chartRef.current.getContext('2d');
-                    chartInstance.current = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Presión (mbar)',
-                                    data: presionData,
-                                    borderColor: 'rgb(59, 130, 246)',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    yAxisID: 'y',
-                                    tension: 0.3,
-                                    fill: true
-                                },
-                                {
-                                    label: 'Nivel (%)',
-                                    data: nivelData,
-                                    borderColor: 'rgb(245, 158, 11)',
-                                    borderDash: [5, 5],
-                                    yAxisID: 'y1',
-                                    tension: 0.3
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            interaction: { mode: 'index', intersect: false },
-                            scales: {
-                                y: { type: 'linear', display: true, position: 'left', title: {display: true, text: 'Presión (mbar)'} },
-                                y1: { type: 'linear', display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display: true, text: 'Nivel (%)'} },
-                            }
-                        }
-                    });
-                }
-                return () => { if (chartInstance.current) chartInstance.current.destroy(); }
-            }, [data, loading]);
-
-            // Calcular KPIs
-            const totalRondas = data.length;
-            const fallasLel = data.filter(t => t.inspeccion_gasometro?.[0]?.lectura_lel_porcentaje > 0).length;
-            const presionMax = data.length > 0 ? Math.max(...data.map(t => t.inspeccion_gasometro?.[0]?.presion_inter_membrana_mbar || 0)) : 0;
-
-            return (
-                <div className="p-4 max-w-md mx-auto min-h-screen space-y-6 font-sans bg-gray-100 pb-20">
-                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl flex items-center justify-between sticky top-0 z-20">
-                        <div className="flex items-center">
-                            <span className="text-2xl mr-3">📊</span>
-                            <h2 className="text-lg font-black uppercase tracking-tight">Supervisión</h2>
-                        </div>
-                        <button onClick={onBack} className="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1 rounded-full font-bold">Volver</button>
-                    </div>
-
-                    {loading ? (
-                        <div className="text-center py-20 text-gray-500 font-bold animate-pulse">Cargando Historial...</div>
-                    ) : (
-                        <>
-                            {/* Tarjetas KPI */}
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
-                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">Rondas (10)</p>
-                                    <p className="text-2xl font-black text-blue-600">{totalRondas}</p>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
-                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">Fugas LEL</p>
-                                    <p className={`text-2xl font-black ${fallasLel > 0 ? 'text-red-600' : 'text-emerald-500'}`}>{fallasLel}</p>
-                                </div>
-                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 text-center">
-                                    <p className="text-[9px] text-gray-500 font-black uppercase mb-1">Pres. Max</p>
-                                    <p className="text-2xl font-black text-amber-500">{presionMax}</p>
-                                </div>
-                            </div>
-
-                            {/* Gráfico de Tendencias */}
-                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Tendencia: Presión vs Nivel</h3>
-                                <canvas ref={chartRef} id="tendenciasChart" className="w-full h-48"></canvas>
-                            </div>
-
-                            {/* Historial en Lista */}
-                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Últimos Registros</h3>
-                                <div className="space-y-3">
-                                    {data.map((turno) => {
-                                        const gas = turno.inspeccion_gasometro?.[0];
-                                        const isOk = gas && gas.lectura_lel_porcentaje == 0 && gas.estado_anclajes === 'Optimo' && gas.estado_gabinete_electrico?.includes('Operativo');
-                                        return (
-                                            <div key={turno.id} className="flex items-center justify-between p-3 border-b border-gray-50 last:border-0">
-                                                <div>
-                                                    <p className="text-xs font-bold text-gray-800">{new Date(turno.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
-                                                    <p className="text-[10px] text-gray-500 truncate w-32">{turno.operador_nombre}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    {isOk ? (
-                                                        <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">ÓPTIMO</span>
-                                                    ) : (
-                                                        <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold">⚠️ FALLAS</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            );
-        }
-
-        // ==========================================
         // COMPONENTE: HUB CENTRAL
         // ==========================================
         function HubCentral({ userEmail, prevValores, avanzarAInstalaciones, abrirDashboard }) {
@@ -425,8 +443,8 @@
                         </div>
                     </div>
 
-                    <button onClick={abrirDashboard} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-md uppercase tracking-widest text-xs flex justify-center items-center">
-                        <span className="text-lg mr-2">📊</span> Módulo de Supervisión y KPIs
+                    <button onClick={abrirDashboard} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-md uppercase tracking-widest text-xs flex justify-center items-center hover:bg-blue-700 transition-colors">
+                        <span className="text-lg mr-2">📊</span> Módulo de Supervisión / Histórico
                     </button>
 
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
@@ -553,11 +571,16 @@
                 agua_trampa: true, valvula_corte: 'Abierta (Candado puesto)', 
                 gabinete: 'Operativo (Luces normales, cerrado)', observaciones: '' 
             });
-            const [fotos, setFotos] = useState({ anclaje: [], altura: [], presion: [], lel: [], guarda: [], sopladores: [], trampa: [], gabinete: [] });
+            
+            const [fotos, setFotos] = useState({ 
+                anclaje: [], altura: [], presion: [], lel: [], guarda: [], sopladores: [], trampa: [], gabinete: [] 
+            });
 
             const manejarFotos = (campo, urls) => setFotos(prev => ({ ...prev, [campo]: urls }));
 
-            const p = parseFloat(fd.presion); const h = parseFloat(fd.altura); const lel = parseFloat(fd.lel);
+            const p = parseFloat(fd.presion); 
+            const h = parseFloat(fd.altura); 
+            const lel = parseFloat(fd.lel);
             
             const alarmaAltura = h > 10.1;
             const alarmaPresion = p >= 25;
@@ -568,6 +591,7 @@
             
             const fotosCompletas = Object.values(fotos).every(arr => arr && arr.length > 0);
             const datosCompletos = fd.altura !== '' && fd.presion !== '' && fd.lel !== '';
+            
             const canSubmit = fotosCompletas && datosCompletos && !observationMissing;
 
             const fallbackFallas = [
@@ -580,6 +604,7 @@
                 { id: 'm4', grupo: 'Mecanicos', descripcion: 'Corrosion severa en pernos o flanges' },
                 { id: 'o1', grupo: 'Otros', descripcion: 'Otra anomalia (Detallar en observaciones)' }
             ];
+
             const fallbackEstados = [
                 { id: 'e1', descripcion: 'Operación Normal (Sin ruidos/vibración)' },
                 { id: 'e2', descripcion: 'Vibración leve detectada' },
@@ -591,6 +616,7 @@
 
             let fallasAUsar = fallbackFallas;
             if (Array.isArray(listaFallas) && listaFallas.length > 0) fallasAUsar = listaFallas;
+
             let estadosAUsar = fallbackEstados;
             if (Array.isArray(listaEstadosSopladores) && listaEstadosSopladores.length > 0) estadosAUsar = listaEstadosSopladores;
 
@@ -602,7 +628,10 @@
 
             return (
                 <div className="p-4 max-w-md mx-auto space-y-6 min-h-screen pb-10 bg-gray-100 font-sans">
-                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl flex items-center sticky top-0 z-20"><span className="text-2xl mr-3">🏗️</span><h2 className="text-lg font-black uppercase tracking-tight">Ronda Gasometro</h2></div>
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl flex items-center sticky top-0 z-20">
+                        <span className="text-2xl mr-3">🏗️</span>
+                        <h2 className="text-lg font-black uppercase tracking-tight">Ronda Gasometro</h2>
+                    </div>
                     
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">PC-1: Membranas y Anclaje Base</h3>
@@ -610,7 +639,9 @@
                             <option value="Optimo">✓ Estado Óptimo</option>
                             {Object.keys(fallasAgrupadas).map(grupo => (
                                 <optgroup key={grupo} label={`⚠️ Falla: ${grupo}`}>
-                                    {fallasAgrupadas[grupo].map(falla => <option key={falla.id} value={falla.descripcion}>{falla.descripcion}</option>)}
+                                    {fallasAgrupadas[grupo].map(falla => (
+                                        <option key={falla.id} value={falla.descripcion}>{falla.descripcion}</option>
+                                    ))}
                                 </optgroup>
                             ))}
                         </select>
@@ -619,18 +650,21 @@
 
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md space-y-8">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-2">PC-2: Lecturas Medidores Gasómetro</h3>
+                        
                         <div className={`p-4 rounded-2xl border-2 transition-all ${alarmaAltura ? 'bg-red-50 border-red-500' : 'bg-gray-50 border-gray-100'}`}>
                             <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${alarmaAltura ? 'text-red-700' : 'text-gray-600'}`}>Altura Membrana Interna (m)</label><Fantasma valor={prevData?.altura_interna_m} /></div>
                             <input type="number" step="0.01" onChange={e=>setFd({...fd, altura:e.target.value})} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-1 ${alarmaAltura ? 'bg-red-100 border-red-500 text-red-900' : 'border-white shadow-sm bg-white'}`}/>
                             {alarmaAltura && <p className="text-red-600 text-[10px] font-black mb-3 text-center animate-pulse tracking-widest">⚠️ ALARMA: Nivel Alto</p>}
                             <MultiFotoUploader idCampo="altura" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Cinta Métrica / Lona" />
                         </div>
+                        
                         <div className={`p-4 rounded-2xl border-2 transition-all ${alarmaPresion ? 'bg-red-50 border-red-500' : 'bg-gray-50 border-gray-100'}`}>
                             <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${alarmaPresion ? 'text-red-700' : 'text-gray-600'}`}>Presión Intermembranas mbar</label><Fantasma valor={prevData?.presion_inter_membrana_mbar} /></div>
                             <input type="number" step="0.1" onChange={e=>setFd({...fd, presion:e.target.value})} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-1 ${alarmaPresion ? 'bg-red-100 border-red-500 text-red-900' : 'border-white shadow-sm bg-white'}`}/>
                             {alarmaPresion && <p className="text-red-600 text-[10px] font-black mb-3 text-center animate-pulse tracking-widest">⚠️ ALARMA: Sobrepresión</p>}
                             <MultiFotoUploader idCampo="presion" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos de Manómetro en U" />
                         </div>
+                        
                         <div className={`p-4 rounded-2xl border-2 transition-all ${alarmaLel ? 'bg-red-50 border-red-500' : 'bg-gray-50 border-gray-100'}`}>
                             <div className="flex justify-between items-center mb-2"><label className={`text-[10px] font-black uppercase ${alarmaLel ? 'text-red-700' : 'text-gray-600'}`}>Lectura LEL Máxima (%)</label><Fantasma valor={prevData?.lectura_lel_porcentaje} /></div>
                             <input type="number" step="0.1" min="0" onKeyDown={(e) => e.key === '-' && e.preventDefault()} onChange={e=>{const val = Math.max(0, parseFloat(e.target.value) || 0); setFd({...fd, lel:e.target.value === '' ? '' : val})}} value={fd.lel} className={`w-full border-2 p-4 rounded-xl text-center font-black text-xl mb-1 ${alarmaLel ? 'bg-red-100 border-red-500 text-red-900' : 'border-white shadow-sm bg-white'}`}/>
@@ -655,7 +689,7 @@
                             <div><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Soplador 2</label><select onChange={e=>setFd({...fd, soplador_2: e.target.value})} className="w-full border-2 border-gray-50 bg-gray-50 p-3 rounded-xl text-xs font-black"><option>Stand-by</option><option>Operativo</option><option>Fuera de Servicio</option></select></div>
                         </div>
                         <div className="mb-4"><label className="text-[9px] text-gray-500 font-black uppercase mb-1 block">Condición Mecánica</label><select onChange={e=>setFd({...fd, condicion_sopladores: e.target.value})} className={`w-full border-2 p-4 rounded-xl text-xs font-black transition-colors ${fd.condicion_sopladores !== 'Operación Normal (Sin ruidos/vibración)' ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-50'}`}>{estadosAUsar.map(estado => <option key={estado.id} value={estado.descripcion}>{estado.descripcion}</option>)}</select></div>
-                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores / Damper" />
+                        <MultiFotoUploader idCampo="sopladores" turnoId={turnoId} onFotosActualizadas={manejarFotos} titulo="Fotos Sopladores/Damper" />
                     </div>
 
                     <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-blue-500 shadow-md">
@@ -744,16 +778,32 @@
                 setPantallaActiva('instalaciones');
             };
 
+            const abrirResumen = () => setPantallaActiva('resumen_final');
+            const volverAInstalaciones = () => setPantallaActiva('instalaciones');
+
             const manejarFinalizacionTotal = async () => {
                 setIsSavingDb(true);
                 try {
+                    // Extraemos la hora exacta de inicio del ID temporal
+                    const horaInicioTimestamp = parseInt(turnoContexto.turnoIdBd.split('-')[1]);
+                    const horaInicioObj = new Date(horaInicioTimestamp);
+
                     const { data: turnoData, error: errT } = await supabaseClient.from('registro_turnos').insert([{
-                        operador_nombre: user.email, tipo_turno: turnoContexto.shift,
-                        scada_nivel_gasometro: turnoContexto.scada.gas_nivel || null, scada_presion_mbar: turnoContexto.scada.gas_presion || null,
-                        scada_flujo_biogas_nm3h: turnoContexto.scada.comp_flujo || null, scada_dig_nivel_cm: turnoContexto.scada.dig_nivel || null,
-                        scada_dig_presion_mbar: turnoContexto.scada.dig_presion || null, scada_dig_temp_c: turnoContexto.scada.dig_temp || null,
-                        scada_comp_presion_imp_mbar: turnoContexto.scada.comp_pres_imp || null, scada_cald_flujo_m3h: turnoContexto.scada.cald_flujo || null,
-                        scada_ant_flujo_m3h: turnoContexto.scada.ant_flujo || null, atex_confirmado: true, estado_ronda: 'Completada', hora_fin: new Date()
+                        operador_nombre: user.email, 
+                        tipo_turno: turnoContexto.shift,
+                        hora_inicio: horaInicioObj,
+                        scada_nivel_gasometro: turnoContexto.scada.gas_nivel || null, 
+                        scada_presion_mbar: turnoContexto.scada.gas_presion || null,
+                        scada_flujo_biogas_nm3h: turnoContexto.scada.comp_flujo || null, 
+                        scada_dig_nivel_cm: turnoContexto.scada.dig_nivel || null,
+                        scada_dig_presion_mbar: turnoContexto.scada.dig_presion || null, 
+                        scada_dig_temp_c: turnoContexto.scada.dig_temp || null,
+                        scada_comp_presion_imp_mbar: turnoContexto.scada.comp_pres_imp || null, 
+                        scada_cald_flujo_m3h: turnoContexto.scada.cald_flujo || null,
+                        scada_ant_flujo_m3h: turnoContexto.scada.ant_flujo || null, 
+                        atex_confirmado: true, 
+                        estado_ronda: 'Completada', 
+                        hora_fin: new Date()
                     }]).select();
 
                     if (!errT && areasStatus.gasometro) {
@@ -780,9 +830,9 @@
                 <div className="bg-gray-100 min-h-screen">
                     {pantallaActiva === 'hub' && <HubCentral userEmail={user.email} prevValores={valoresAnteriores} avanzarAInstalaciones={manejarArranqueRonda} abrirDashboard={() => setPantallaActiva('dashboard')} />}
                     {pantallaActiva === 'dashboard' && <VistaDashboard onBack={() => setPantallaActiva('hub')} />}
-                    {pantallaActiva === 'instalaciones' && <MenuInstalaciones areasDone={areasStatus} irAGasometro={() => setPantallaActiva('form_gasometro')} revisarYFinalizar={() => setPantallaActiva('resumen_final')} />}
+                    {pantallaActiva === 'instalaciones' && <MenuInstalaciones areasDone={areasStatus} irAGasometro={() => setPantallaActiva('form_gasometro')} revisarYFinalizar={abrirResumen} />}
                     {pantallaActiva === 'form_gasometro' && <FormularioGasometro turnoId={turnoContexto.turnoIdBd} prevData={valoresAnteriores.gasometro} listaFallas={listaFallas} listaEstadosSopladores={listaEstadosSopladores} onTerminado={(d, f) => { setDatosGasometroTemp(d); setFotosGasometroTemp(f); setAreasStatus({...areasStatus, gasometro: true}); setPantallaActiva('instalaciones'); }} />}
-                    {pantallaActiva === 'resumen_final' && <VistaResumenFinal turnoContexto={turnoContexto} datosGasometro={datosGasometroTemp} setDatosGasometro={setDatosGasometroTemp} onConfirm={manejarFinalizacionTotal} onBack={() => setPantallaActiva('instalaciones')} loading={isSavingDb} />}
+                    {pantallaActiva === 'resumen_final' && <VistaResumenFinal turnoContexto={turnoContexto} datosGasometro={datosGasometroTemp} setDatosGasometro={setDatosGasometroTemp} onConfirm={manejarFinalizacionTotal} onBack={volverAInstalaciones} loading={isSavingDb} />}
                     {pantallaActiva === 'fin' && (
                         <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[#1e1e1e] text-center text-white">
                             <div className="bg-[#2a2a2a] p-10 rounded-[3rem] border border-zinc-700 shadow-2xl">
