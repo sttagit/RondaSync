@@ -711,7 +711,7 @@ function FormularioArea50({ turnoId, prevData, onTerminado, isPurgaTurno }) {
                 <div className="flex justify-between mb-1"><label className="text-[10px] font-bold uppercase">Altura Manto Lodos (cm)</label><Fantasma valor={prevData?.altura_lodo_cm}/></div>
                 <input type="number" value={fd.altura} onChange={e=>set('altura',e.target.value)}
                     className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alAltura?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                {alAltura && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Lodo excede los 120 cm — Referencia: < 120 cm</p>}
+                {alAltura && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Lodo excede los 120 cm — Referencia: < 120 cm</p>}
                 <MultiFotoUploader idCampo="a50_espesado" turnoId={turnoId} onFotosActualizadas={mf} />
             </div>
 
@@ -723,25 +723,25 @@ function FormularioArea50({ turnoId, prevData, onTerminado, isPurgaTurno }) {
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Balón (cm)</label><Fantasma valor={prevData?.nivel_balon_cm}/></div>
                         <input type="number" step="0.1" value={fd.nivel} onChange={e=>set('nivel',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alNivel?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alNivel && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 60 – 120 cm</p>}
+                        {alNivel && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 60 – 120 cm</p>}
                     </div>
                     <div>
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Balón (bar)</label><Fantasma valor={prevData?.presion_balon_bar}/></div>
                         <input type="number" step="0.1" value={fd.presion} onChange={e=>set('presion',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alPres?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alPres && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Crítica: < 3 bar</p>}
+                        {alPres && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Crítica: < 3 bar</p>}
                     </div>
                     <div>
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Altura Lodo Flotado (cm)</label><Fantasma valor={prevData?.altura_lodo_flotado_cm}/></div>
                         <input type="number" step="0.1" value={fd.altura_flotado} onChange={e=>set('altura_flotado',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alAltFlot?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alAltFlot && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 1 – 4 cm</p>}
+                        {alAltFlot && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 1 – 4 cm</p>}
                     </div>
                     <div>
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Entrada (bar)</label><Fantasma valor={prevData?.pres_lodo_entrada_bar}/></div>
                         <input type="number" step="0.1" value={fd.pres_entrada} onChange={e=>set('pres_entrada',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alPresEnt?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alPresEnt && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 3 bar</p>}
+                        {alPresEnt && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 3 bar</p>}
                     </div>
                 </div>
                 <label className="text-[10px] font-bold uppercase block mb-1">Purga Flotador</label>
@@ -751,7 +751,7 @@ function FormularioArea50({ turnoId, prevData, onTerminado, isPurgaTurno }) {
                 <label className="text-[10px] font-bold uppercase block mb-1">Cámara Mezcla (%)</label>
                 <input type="number" value={fd.mezcla} onChange={e=>set('mezcla',e.target.value)}
                     className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-2 outline-none focus:border-aguas-blue ${alMez?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                {alMez && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 90%</p>}
+                {alMez && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 90%</p>}
                 <MultiFotoUploader idCampo="a50_flotador" turnoId={turnoId} onFotosActualizadas={mf} />
             </div>
 
@@ -775,7 +775,7 @@ function FormularioArea50({ turnoId, prevData, onTerminado, isPurgaTurno }) {
                 <div className="flex justify-between mb-1"><label className="text-[10px] font-bold uppercase">Presión Línea Aire (bar)</label><Fantasma valor={prevData?.presion_linea_aire_bar}/></div>
                 <input type="number" step="0.1" value={fd.pres_linea} onChange={e=>set('pres_linea',e.target.value)}
                     className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-3 outline-none focus:border-aguas-blue ${alPLinea?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                {alPLinea && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 6 bar</p>}
+                {alPLinea && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 6 bar</p>}
                 {isPurgaTurno && (
                     <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-2xl border border-amber-200 cursor-pointer mt-2">
                         <input type="checkbox" checked={fd.purga_comp} onChange={e=>set('purga_comp',e.target.checked)} className="h-6 w-6"/>
@@ -793,13 +793,13 @@ function FormularioArea50({ turnoId, prevData, onTerminado, isPurgaTurno }) {
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Cámara Biológica (%)</label><Fantasma valor={prevData?.nivel_camara_biologica_pct}/></div>
                         <input type="number" value={fd.cam_biologica} onChange={e=>set('cam_biologica',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alCamBio?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alCamBio && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser < 90%</p>}
+                        {alCamBio && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser < 90%</p>}
                     </div>
                     <div>
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Estanque Férrico (lts)</label><Fantasma valor={prevData?.nivel_estanque_ferrico_lts}/></div>
                         <input type="number" value={fd.estanque_ferrico} onChange={e=>set('estanque_ferrico',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alEstFer?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alEstFer && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 300 lts</p>}
+                        {alEstFer && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 300 lts</p>}
                     </div>
                 </div>
                 <div className="flex justify-between mb-1"><label className="text-[10px] font-bold uppercase">Caudal Dosificación Bomba</label><Fantasma valor={prevData?.caudal_dosificacion}/></div>
@@ -921,7 +921,7 @@ function FormularioArea60({ turnoId, prevData, onTerminado }) {
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Est. Expansión (cm)</label><Fantasma valor={prevData?.nivel_estanque_expansion_cm}/></div>
                         <input type="number" step="0.1" value={fd.nivel_estanque} onChange={e=>set('nivel_estanque',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alNivEst?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alNivEst && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 70 – 90 cm</p>}
+                        {alNivEst && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 70 – 90 cm</p>}
                     </div>
                     <div>
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Banco N₂</label><Fantasma valor={prevData?.presion_banco_nitrogeno}/></div>
@@ -945,7 +945,7 @@ function FormularioArea60({ turnoId, prevData, onTerminado }) {
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Aceite (%)</label><Fantasma valor={prevData?.nivel_aceite_compresor_pct}/></div>
                         <input type="number" value={fd.aceite} onChange={e=>set('aceite',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alAceite?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alAceite && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 50%</p>}
+                        {alAceite && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 50%</p>}
                     </div>
                     <div>
                         <label className="text-[9px] font-bold uppercase block mb-1">Soplador Funcionando</label>
@@ -1046,13 +1046,13 @@ function FormularioArea70({ turnoId, prevData, onTerminado }) {
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Torque A (%)</label><Fantasma valor={prevData?.torque}/></div>
                         <input type="number" step="0.1" value={fd.torque} onChange={e=>set('torque',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alTA?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alTA && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 33 – 45</p>}
+                        {alTA && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 33 – 45</p>}
                     </div>
                     <div>
                         <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Vel. Rel. A</label><Fantasma valor={prevData?.velocidad_relativa}/></div>
                         <input type="number" step="0.1" value={fd.vel_rel} onChange={e=>set('vel_rel',e.target.value)}
                             className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alVA?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alVA && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 2.5 – 6.5</p>}
+                        {alVA && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 2.5 – 6.5</p>}
                     </div>
                 </div>
 
@@ -1065,13 +1065,13 @@ function FormularioArea70({ turnoId, prevData, onTerminado }) {
                                 <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Torque B (%)</label><Fantasma valor={prevData?.torque_b}/></div>
                                 <input type="number" step="0.1" value={fd.torque_b} onChange={e=>set('torque_b',e.target.value)}
                                     className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alTB?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                                {alTB && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 33 – 45</p>}
+                                {alTB && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 33 – 45</p>}
                             </div>
                             <div>
                                 <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Vel. Rel. B</label><Fantasma valor={prevData?.velocidad_relativa_b}/></div>
                                 <input type="number" step="0.1" value={fd.vel_b} onChange={e=>set('vel_b',e.target.value)}
                                     className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alVB?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                                {alVB && && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 2.5 – 6.5</p>}
+                                {alVB && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 2.5 – 6.5</p>}
                             </div>
                         </div>
                     </>
