@@ -656,536 +656,177 @@ function FormularioAntorchas({ turnoId, prevData, onTerminado }) {
 // ─────────────────────────────────────────────
 // FORMULARIO ÁREA 50 (Espesado + Flotador + Compresores + Cámara Contacto)
 // ─────────────────────────────────────────────
-function FormularioArea50({ turnoId, prevData, onTerminado, isPurgaTurno }) {
-    const [fd, setFd] = useState({
-        rastras:'Optimo', altura:'', nivel:'', presion:'', mezcla:'',
-        altura_flotado:'', purga_flotador:'Siempre Clara', pres_entrada:'',
-        comp_a:'Operativo', comp_b:'Operativo', pres_linea:'', purga_comp:false,
-        cam_biologica:'', estanque_ferrico:'', caudal_dos:'',
-        observaciones:''
-    });
-    const [fotos, setFotos] = useState({});
-    const mf  = (c,u) => setFotos(p=>({...p,[c]:u}));
-    const set = (k,v) => setFd(p=>({...p,[k]:v}));
+// ==========================================
+        // FORMULARIO ÁREA 50
+        // ==========================================
+        function FormularioArea50({ turnoId, prevData, onTerminado }) {
+            const [fd, setFd] = useState({ rastras:'Optimo', altura:'', nivel:'', presion:'', mezcla:'', observaciones:'' });
+            const [fotos, setFotos] = useState({});
+            const mf = (c,u) => setFotos(p=>({...p,[c]:u}));
 
-    const alt=parseFloat(fd.altura), niv=parseFloat(fd.nivel), pres=parseFloat(fd.presion), mez=parseFloat(fd.mezcla);
-    const pLinea=parseFloat(fd.pres_linea), camBio=parseFloat(fd.cam_biologica);
-    const estFer=parseFloat(fd.estanque_ferrico), presEnt=parseFloat(fd.pres_entrada);
-    const altFlot=parseFloat(fd.altura_flotado);
+            const alt=parseFloat(fd.altura), niv=parseFloat(fd.nivel), pres=parseFloat(fd.presion), mez=parseFloat(fd.mezcla);
+            const alAltura=alt>120, alNivel=niv<60||niv>120, alPres=pres<3, alMez=mez<90;
+            const reqObs = fd.rastras !== 'Optimo' || alAltura || alNivel || alPres || alMez;
+            const camposOblig = ['a50_flotador','a50_balon'];
+            const canSubmit = camposOblig.every(c=>fotos[c]?.length>0) && fd.altura && fd.nivel && fd.presion && (!reqObs || fd.observaciones.trim() !== '');
 
-    const alAltura = alt>120;
-    const alNivel  = niv<60||niv>120;
-    const alPres   = pres<3;
-    const alMez    = mez<90;
-    const alPLinea = fd.pres_linea!=='' && pLinea<6;
-    const alCamBio = fd.cam_biologica!=='' && camBio>=90;
-    const alEstFer = fd.estanque_ferrico!=='' && estFer<300;
-    const alPresEnt= fd.pres_entrada!=='' && presEnt<3;
-    const alAltFlot= fd.altura_flotado!=='' && (altFlot<1||altFlot>4);
+            return (
+                <div className="p-4 max-w-md mx-auto space-y-6 min-h-screen pb-10 font-sans fade-in">
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl"><h2 className="text-lg font-black uppercase">Área 50: Flotación</h2></div>
 
-    const reqObs = fd.rastras!=='Optimo' || alAltura || alNivel || alPres || alMez ||
-                   fd.comp_a!=='Operativo' || fd.comp_b!=='Operativo' || alPLinea ||
-                   alCamBio || alEstFer || alPresEnt || alAltFlot ||
-                   fd.purga_flotador!=='Siempre Clara';
-
-    const oblig = ['a50_espesado','a50_flotador','a50_compresores','a50_camara'];
-    const canSubmit = oblig.every(c=>fotos[c]?.length>0) &&
-        fd.altura && fd.nivel && fd.presion && fd.pres_linea &&
-        fd.cam_biologica && fd.estanque_ferrico &&
-        (!reqObs || fd.observaciones.trim()!=='');
-
-
-    return (
-        <div className="p-4 max-w-md mx-auto space-y-5 min-h-screen pb-10 fade-in">
-            <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl">
-                <h2 className="text-lg font-black uppercase tracking-wide">Área 50: Línea de Lodos</h2>
-            </div>
-
-            {/* PC-1: Espesado */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-blue shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-1: Espesador</h3>
-                <label className="text-[10px] font-bold uppercase block mb-1">Estado Rastras</label>
-                <select value={fd.rastras} onChange={e=>set('rastras',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue">
-                    <option>Optimo</option><option>Falla mecánica</option><option>Detenido</option>
-                </select>
-                <div className="flex justify-between mb-1"><label className="text-[10px] font-bold uppercase">Altura Manto Lodos (cm)</label><Fantasma valor={prevData?.altura_lodo_cm}/></div>
-                <input type="number" value={fd.altura} onChange={e=>set('altura',e.target.value)}
-                    className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alAltura?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                {alAltura && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Lodo excede los 120 cm — Referencia: < 120 cm</p>}
-                <MultiFotoUploader idCampo="a50_espesado" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-
-            {/* PC-2: Flotador */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-green shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-2: Flotador</h3>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Balón (cm)</label><Fantasma valor={prevData?.nivel_balon_cm}/></div>
-                        <input type="number" step="0.1" value={fd.nivel} onChange={e=>set('nivel',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alNivel?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alNivel && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 60 – 120 cm</p>}
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Balón (bar)</label><Fantasma valor={prevData?.presion_balon_bar}/></div>
-                        <input type="number" step="0.1" value={fd.presion} onChange={e=>set('presion',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alPres?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alPres && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Crítica: < 3 bar</p>}
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Altura Lodo Flotado (cm)</label><Fantasma valor={prevData?.altura_lodo_flotado_cm}/></div>
-                        <input type="number" step="0.1" value={fd.altura_flotado} onChange={e=>set('altura_flotado',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alAltFlot?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alAltFlot && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 1 – 4 cm</p>}
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Entrada (bar)</label><Fantasma valor={prevData?.pres_lodo_entrada_bar}/></div>
-                        <input type="number" step="0.1" value={fd.pres_entrada} onChange={e=>set('pres_entrada',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alPresEnt?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alPresEnt && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 3 bar</p>}
-                    </div>
-                </div>
-                <label className="text-[10px] font-bold uppercase block mb-1">Purga Flotador</label>
-                <select value={fd.purga_flotador} onChange={e=>set('purga_flotador',e.target.value)} className={`w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue ${fd.purga_flotador!=='Siempre Clara'?'bg-red-50 border-red-400':''}`}>
-                    <option>Siempre Clara</option><option>Turbia</option>
-                </select>
-                <label className="text-[10px] font-bold uppercase block mb-1">Cámara Mezcla (%)</label>
-                <input type="number" value={fd.mezcla} onChange={e=>set('mezcla',e.target.value)}
-                    className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-2 outline-none focus:border-aguas-blue ${alMez?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                {alMez && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 90%</p>}
-                <MultiFotoUploader idCampo="a50_flotador" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-
-            {/* PC-3: Compresores de Flotación */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-amber-500 shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-3: Compresores de Flotación</h3>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label className="text-[9px] font-bold uppercase block mb-1">Compresor Aire A</label>
-                        <select value={fd.comp_a} onChange={e=>set('comp_a',e.target.value)} className={`w-full border-2 p-3 rounded-xl text-sm outline-none focus:border-aguas-blue ${fd.comp_a!=='Operativo'?'bg-red-50 border-red-400':''}`}>
-                            <option>Operativo</option><option>Falla</option><option>Detenido</option>
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-blue shadow-sm border">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-1: Espesamiento</h3>
+                        <label className="text-[10px] font-black">Estado Rastras</label>
+                        <select value={fd.rastras} onChange={e=>setFd({...fd,rastras:e.target.value})} className="w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue">
+                            <option>Optimo</option><option>Falla mecánica</option>
                         </select>
+                        <div className="flex justify-between mb-1"><label className="text-[10px] font-black">Altura Manto Lodos (cm)</label><Fantasma valor={prevData?.altura_lodo_cm}/></div>
+                        <input type="number" value={fd.altura} onChange={e=>setFd({...fd,altura:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alAltura ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                        {alAltura && <p className="text-[9px] text-red-600 font-bold mt-1">Mayor a 120 cm.</p>}
+                        <MultiFotoUploader idCampo="a50_flotador" turnoId={turnoId} onFotosActualizadas={mf} />
                     </div>
-                    <div>
-                        <label className="text-[9px] font-bold uppercase block mb-1">Compresor Aire B</label>
-                        <select value={fd.comp_b} onChange={e=>set('comp_b',e.target.value)} className={`w-full border-2 p-3 rounded-xl text-sm outline-none focus:border-aguas-blue ${fd.comp_b!=='Operativo'?'bg-red-50 border-red-400':''}`}>
-                            <option>Operativo</option><option>Falla</option><option>Detenido</option>
-                        </select>
+
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-green shadow-sm border">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-2: Balón Presurizador</h3>
+                        <div className="flex justify-between mb-1"><label className="text-[10px] font-black">Nivel Visor (cm)</label><Fantasma valor={prevData?.nivel_balon_cm}/></div>
+                        <input type="number" value={fd.nivel} onChange={e=>setFd({...fd,nivel:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-3 outline-none focus:border-aguas-blue ${alNivel ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                        {alNivel && <p className="text-[9px] text-red-600 font-bold -mt-2 mb-2">Rango Normal: 60 a 120 cm</p>}
+                        <div className="flex justify-between mb-1"><label className="text-[10px] font-black">Presión Balón (bar)</label><Fantasma valor={prevData?.presion_balon_bar}/></div>
+                        <input type="number" step="0.1" value={fd.presion} onChange={e=>setFd({...fd,presion:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alPres ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                        {alPres && <p className="text-[9px] text-red-600 font-bold mt-1">Presión crítica menor a 3 bar</p>}
+                        <label className="text-[10px] font-black mt-3 block">Cámara Mezcla (%)</label>
+                        <input type="number" value={fd.mezcla} onChange={e=>setFd({...fd,mezcla:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alMez ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                        <MultiFotoUploader idCampo="a50_balon" turnoId={turnoId} onFotosActualizadas={mf} />
                     </div>
+
+                    <div className="bg-white p-5 rounded-3xl shadow-sm border">
+                        <label className="text-[10px] font-black uppercase mb-2 block">Observaciones Área 50</label>
+                        {reqObs && <p className="text-[10px] text-red-600 font-black mb-2 animate-pulse uppercase">Justifique alarmas</p>}
+                        <textarea value={fd.observaciones} onChange={e=>setFd({...fd,observaciones:e.target.value})} className={`w-full border-2 p-4 rounded-2xl text-sm outline-none focus:border-aguas-blue ${reqObs ? 'bg-red-50 border-red-400' : ''}`} rows="3"></textarea>
+                    </div>
+                    <button onClick={()=>onTerminado(fd,fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-6 rounded-3xl shadow-xl uppercase tracking-widest active:scale-95 transition-all ${canSubmit ? 'bg-aguas-blue hover:bg-aguas-dark' : 'bg-gray-300 cursor-not-allowed'}`}>Sellar Área 50</button>
                 </div>
-                <div className="flex justify-between mb-1"><label className="text-[10px] font-bold uppercase">Presión Línea Aire (bar)</label><Fantasma valor={prevData?.presion_linea_aire_bar}/></div>
-                <input type="number" step="0.1" value={fd.pres_linea} onChange={e=>set('pres_linea',e.target.value)}
-                    className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-3 outline-none focus:border-aguas-blue ${alPLinea?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                {alPLinea && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 6 bar</p>}
-                {isPurgaTurno && (
-                    <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-2xl border border-amber-200 cursor-pointer mt-2">
-                        <input type="checkbox" checked={fd.purga_comp} onChange={e=>set('purga_comp',e.target.checked)} className="h-6 w-6"/>
-                        <span className="text-sm font-bold text-amber-800">Purga Compresores realizada ✓</span>
-                    </label>
-                )}
-                <MultiFotoUploader idCampo="a50_compresores" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
+            );
+        }
 
-            {/* PC-4: Cámara de Contacto */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-purple-500 shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-4: Cámara de Contacto</h3>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Cámara Biológica (%)</label><Fantasma valor={prevData?.nivel_camara_biologica_pct}/></div>
-                        <input type="number" value={fd.cam_biologica} onChange={e=>set('cam_biologica',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alCamBio?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alCamBio && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser < 90%</p>}
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Estanque Férrico (lts)</label><Fantasma valor={prevData?.nivel_estanque_ferrico_lts}/></div>
-                        <input type="number" value={fd.estanque_ferrico} onChange={e=>set('estanque_ferrico',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alEstFer?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alEstFer && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 300 lts</p>}
-                    </div>
-                </div>
-                <div className="flex justify-between mb-1"><label className="text-[10px] font-bold uppercase">Caudal Dosificación Bomba</label><Fantasma valor={prevData?.caudal_dosificacion}/></div>
-                <input type="number" step="0.1" value={fd.caudal_dos} onChange={e=>set('caudal_dos',e.target.value)}
-                    className="w-full border-2 p-3 rounded-xl text-center text-lg mb-2 outline-none focus:border-aguas-blue"/>
-                <MultiFotoUploader idCampo="a50_camara" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
+        // ==========================================
+        // FORMULARIO ÁREA 60
+        // ==========================================
+        function FormularioArea60({ turnoId, prevData, onTerminado }) {
+            const [fd, setFd] = useState({ temp_in:'', temp_out:'', bombas:'Optimo', observaciones:'' });
+            const [fotos, setFotos] = useState({});
+            const mf = (c,u) => setFotos(p=>({...p,[c]:u}));
 
-            <div className="bg-white p-5 rounded-3xl shadow-sm border">
-                <label className="text-[10px] font-black uppercase mb-2 block">Observaciones Área 50</label>
-                {reqObs && <p className="text-[10px] text-red-600 font-black mb-2 uppercase">⚠️ Justifique alarmas detectadas</p>}
-                <textarea value={fd.observaciones} onChange={e=>set('observaciones',e.target.value)} rows="3"
-                    className={`w-full border-2 p-4 rounded-2xl text-sm outline-none focus:border-aguas-blue ${reqObs?'bg-red-50 border-red-400':''}`}/>
-            </div>
-            <button onClick={()=>onTerminado(fd,fotos)} disabled={!canSubmit}
-                className={`w-full text-white font-black py-5 rounded-3xl shadow-xl uppercase tracking-widest text-sm active:scale-95 transition-all ${canSubmit?'bg-aguas-blue hover:bg-aguas-dark':'bg-gray-300 cursor-not-allowed'}`}>
-                Sellar Área 50
-            </button>
-        </div>
-    );
-}
+            const tIn=parseFloat(fd.temp_in), tOut=parseFloat(fd.temp_out);
+            const deltaT = (fd.temp_in && fd.temp_out) ? Math.abs(tIn - tOut).toFixed(1) : '--';
+            const alTIn=tIn<=34, alTOut=tOut>=35.5;
+            const reqObs = fd.bombas !== 'Optimo' || alTIn || alTOut;
+            const camposOblig = ['a60_inter','a60_bombas'];
+            const canSubmit = camposOblig.every(c=>fotos[c]?.length>0) && fd.temp_in && fd.temp_out && (!reqObs || fd.observaciones.trim() !== '');
 
-// ─────────────────────────────────────────────
-// FORMULARIO ÁREA 60 (Intercambiador + Calderas + Compresores/Sopladores)
-// ─────────────────────────────────────────────
-function FormularioArea60({ turnoId, prevData, onTerminado }) {
-    const [fd, setFd] = useState({
-        temp_in:'', temp_out:'', temp_agua_in:'', temp_agua_out:'',
-        bombas:'Optimo',
-        caldera_op:'A', atomizadores:'1', pres_sal_cald:'', pres_sal_recirc:'',
-        nivel_estanque:'', pres_nitrogeno:'',
-        compresor:'A', aceite:'', filtro_ok:true, trampa:'OK', purga_ace:true,
-        soplador:'A', pres_soplador:'', caudal_caldera:'',
-        observaciones:''
-    });
-    const [fotos, setFotos] = useState({});
-    const mf  = (c,u) => setFotos(p=>({...p,[c]:u}));
-    const set = (k,v) => setFd(p=>({...p,[k]:v}));
+            return (
+                <div className="p-4 max-w-md mx-auto space-y-6 min-h-screen pb-10 font-sans fade-in">
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl"><h2 className="text-lg font-black uppercase">Área 60: Central Térmica</h2></div>
 
-    const tIn=parseFloat(fd.temp_in), tOut=parseFloat(fd.temp_out);
-    const deltaT = (fd.temp_in && fd.temp_out) ? Math.abs(tIn-tOut).toFixed(1) : '--';
-    const aceite=parseFloat(fd.aceite), nivel=parseFloat(fd.nivel_estanque);
-
-    const alTIn    = fd.temp_in!=='' && tIn<=34;
-    const alTOut   = fd.temp_out!=='' && tOut>=35.5;
-    const alAceite = fd.aceite!=='' && aceite<50;
-    const alNivEst = fd.nivel_estanque!=='' && (nivel<70||nivel>90);
-
-    const reqObs = fd.bombas!=='Optimo' || alTIn || alTOut || alAceite ||
-                   alNivEst || !fd.filtro_ok || fd.trampa!=='OK' || !fd.purga_ace;
-
-    const oblig = ['a60_inter','a60_calderas','a60_compresores'];
-    const canSubmit = oblig.every(c=>fotos[c]?.length>0) &&
-        fd.temp_in && fd.temp_out && fd.pres_sal_cald && fd.nivel_estanque &&
-        fd.aceite && fd.pres_soplador && fd.caudal_caldera &&
-        (!reqObs || fd.observaciones.trim()!=='');
-
-
-    return (
-        <div className="p-4 max-w-md mx-auto space-y-5 min-h-screen pb-10 fade-in">
-            <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl">
-                <h2 className="text-lg font-black uppercase tracking-wide">Área 60: Central Térmica</h2>
-            </div>
-
-            {/* PC-1: Intercambiador */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-red-500 shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-1: Intercambiador de Calor</h3>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                    {[
-                        ['temp_in','T° Lodo Entrada','temp_lodo_entrada_c',alTIn,'Debe ser > 34°C'],
-                        ['temp_out','T° Lodo Salida','temp_lodo_salida_c',alTOut,'Debe ser < 35.5°C'],
-                        ['temp_agua_in','T° Agua Entrada','temp_agua_entrada_c',false,''],
-                        ['temp_agua_out','T° Agua Salida','temp_agua_salida_c',false,''],
-                    ].map(([k,lbl,pk,al,msg])=>(
-                        <div key={k}>
-                            <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">{lbl}</label><Fantasma valor={prevData?.[pk]}/></div>
-                            <input type="number" step="0.1" value={fd[k]} onChange={e=>set(k,e.target.value)}
-                                className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${al?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                            {al && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ {msg}</p>}
-                        </div>
-                    ))}
-                </div>
-                <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 text-center mb-3">
-                    <p className="text-[10px] text-aguas-blue font-black uppercase">Salto Térmico Lodo (ΔT)</p>
-                    <p className="text-2xl font-black text-aguas-dark">{deltaT} °C</p>
-                </div>
-                <label className="text-[9px] font-bold uppercase block mb-1">Bombas Recirculadoras</label>
-                <select value={fd.bombas} onChange={e=>set('bombas',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm mb-2 outline-none focus:border-aguas-blue">
-                    <option>Optimo</option><option>Fuga sello</option><option>Cavitación</option>
-                </select>
-                <MultiFotoUploader idCampo="a60_inter" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-
-            {/* PC-2: Calderas */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-amber-500 shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-2: Calderas</h3>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label className="text-[9px] font-bold uppercase block mb-1">Caldera Operativa</label>
-                        <select value={fd.caldera_op} onChange={e=>set('caldera_op',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm outline-none focus:border-aguas-blue">
-                            <option>A</option><option>B</option><option>Ambas</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="text-[9px] font-bold uppercase block mb-1">Atomizadores</label>
-                        <select value={fd.atomizadores} onChange={e=>set('atomizadores',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm outline-none focus:border-aguas-blue">
-                            <option>1</option><option>2</option><option>Automático</option>
-                        </select>
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Sal. Agua Cald.</label><Fantasma valor={prevData?.pres_salida_agua_caldera}/></div>
-                        <input type="number" step="0.1" value={fd.pres_sal_cald} onChange={e=>set('pres_sal_cald',e.target.value)} className="w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue"/>
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Sal. Recirc.</label><Fantasma valor={prevData?.pres_salida_recirculacion}/></div>
-                        <input type="number" step="0.1" value={fd.pres_sal_recirc} onChange={e=>set('pres_sal_recirc',e.target.value)} className="w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue"/>
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Est. Expansión (cm)</label><Fantasma valor={prevData?.nivel_estanque_expansion_cm}/></div>
-                        <input type="number" step="0.1" value={fd.nivel_estanque} onChange={e=>set('nivel_estanque',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alNivEst?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alNivEst && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 70 – 90 cm</p>}
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Banco N₂</label><Fantasma valor={prevData?.presion_banco_nitrogeno}/></div>
-                        <input type="number" step="0.1" value={fd.pres_nitrogeno} onChange={e=>set('pres_nitrogeno',e.target.value)} className="w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue"/>
-                    </div>
-                </div>
-                <MultiFotoUploader idCampo="a60_calderas" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-
-            {/* PC-3: Compresores y Sopladores */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-green shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-3: Compresores y Sopladores</h3>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label className="text-[9px] font-bold uppercase block mb-1">Compresor Funcionando</label>
-                        <select value={fd.compresor} onChange={e=>set('compresor',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm outline-none focus:border-aguas-blue">
-                            <option>A</option><option>B</option>
-                        </select>
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Aceite (%)</label><Fantasma valor={prevData?.nivel_aceite_compresor_pct}/></div>
-                        <input type="number" value={fd.aceite} onChange={e=>set('aceite',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alAceite?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alAceite && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Debe ser > 50%</p>}
-                    </div>
-                    <div>
-                        <label className="text-[9px] font-bold uppercase block mb-1">Soplador Funcionando</label>
-                        <select value={fd.soplador} onChange={e=>set('soplador',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm outline-none focus:border-aguas-blue">
-                            <option>A</option><option>B</option>
-                        </select>
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Pres. Entrada Soplador</label><Fantasma valor={prevData?.presion_entrada_soplador}/></div>
-                        <input type="number" step="0.1" value={fd.pres_soplador} onChange={e=>set('pres_soplador',e.target.value)} className="w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue"/>
-                    </div>
-                </div>
-                <label className="text-[10px] font-bold uppercase block mb-1">Caudal Biogás a Caldera (Nm³/h)</label>
-                <input type="number" step="0.1" value={fd.caudal_caldera} onChange={e=>set('caudal_caldera',e.target.value)}
-                    className="w-full border-2 p-3 rounded-xl text-center text-lg mb-3 outline-none focus:border-aguas-blue"/>
-                <label className="text-[9px] font-bold uppercase block mb-1">Nivel Trampa Condensación</label>
-                <select value={fd.trampa} onChange={e=>set('trampa',e.target.value)} className={`w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue ${fd.trampa!=='OK'?'bg-red-50 border-red-400':''}`}>
-                    <option>OK</option><option>Revisar</option>
-                </select>
-                <div className="grid grid-cols-2 gap-3 mb-2">
-                    <label className="flex items-center gap-2 p-3 bg-gray-50 rounded-2xl border cursor-pointer">
-                        <input type="checkbox" checked={fd.filtro_ok} onChange={e=>set('filtro_ok',e.target.checked)} className="h-5 w-5"/>
-                        <span className="text-xs font-bold">Filtro Cerámico OK</span>
-                    </label>
-                    <label className="flex items-center gap-2 p-3 bg-gray-50 rounded-2xl border cursor-pointer">
-                        <input type="checkbox" checked={fd.purga_ace} onChange={e=>set('purga_ace',e.target.checked)} className="h-5 w-5"/>
-                        <span className="text-xs font-bold">Purga Trampa Aceite OK</span>
-                    </label>
-                </div>
-                <MultiFotoUploader idCampo="a60_compresores" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-
-            <div className="bg-white p-5 rounded-3xl shadow-sm border">
-                <label className="text-[10px] font-black uppercase mb-2 block">Observaciones Área 60</label>
-                {reqObs && <p className="text-[10px] text-red-600 font-black mb-2 uppercase">⚠️ Justifique anomalías</p>}
-                <textarea value={fd.observaciones} onChange={e=>set('observaciones',e.target.value)} rows="3"
-                    className={`w-full border-2 p-4 rounded-2xl text-sm outline-none focus:border-aguas-blue ${reqObs?'bg-red-50 border-red-400':''}`}/>
-            </div>
-            <button onClick={()=>onTerminado(fd,fotos)} disabled={!canSubmit}
-                className={`w-full text-white font-black py-5 rounded-3xl shadow-xl uppercase tracking-widest text-sm active:scale-95 transition-all ${canSubmit?'bg-aguas-blue hover:bg-aguas-dark':'bg-gray-300 cursor-not-allowed'}`}>
-                Sellar Área 60
-            </button>
-        </div>
-    );
-}
-
-// ─────────────────────────────────────────────
-// FORMULARIO ÁREA 70 (Centrífugas A+B+Móvil + Digestor válvulas + Polipack completo)
-// ─────────────────────────────────────────────
-function FormularioArea70({ turnoId, prevData, onTerminado }) {
-    const [fd, setFd] = useState({
-        centrifuga:'A',
-        torque:'', vel_rel:'', torque_b:'', vel_b:'', torque_mov:'', vel_mov:'',
-        juego_valvulas:'Azul', purga_fondo:false,
-        polipack:'', carga_pol:false, caudal_agua:'',
-        bombas_dos:'Optimo', observaciones:''
-    });
-    const [fotos, setFotos] = useState({});
-    const mf  = (c,u) => setFotos(p=>({...p,[c]:u}));
-    const set = (k,v) => setFd(p=>({...p,[k]:v}));
-
-    const torq=parseFloat(fd.torque), vel=parseFloat(fd.vel_rel);
-    const torqB=parseFloat(fd.torque_b), velB=parseFloat(fd.vel_b);
-    const poli=parseFloat(fd.polipack);
-
-    const alTA  = fd.torque!=='' && (torq<33||torq>45);
-    const alVA  = fd.vel_rel!=='' && (vel<2.5||vel>6.5);
-    const alTB  = fd.centrifuga!=='A' && fd.torque_b!=='' && (torqB<33||torqB>45);
-    const alVB  = fd.centrifuga!=='A' && fd.vel_b!=='' && (velB<2.5||velB>6.5);
-    const alPoli= fd.polipack!=='' && poli<50;
-
-    const reqObs = fd.bombas_dos!=='Optimo' || alTA || alVA || alTB || alVB || alPoli;
-
-    const oblig = ['a70_centrifuga','a70_polipack','a70_digestor'];
-    const canSubmit = oblig.every(c=>fotos[c]?.length>0) &&
-        fd.torque!=='' && fd.vel_rel!=='' && fd.polipack!=='' &&
-        (!reqObs || fd.observaciones.trim()!=='');
-
-
-    return (
-        <div className="p-4 max-w-md mx-auto space-y-5 min-h-screen pb-10 fade-in">
-            <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl">
-                <h2 className="text-lg font-black uppercase tracking-wide">Área 70: Deshidratación</h2>
-            </div>
-
-            {/* PC-1: Centrífugas */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-blue shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-1: Centrífugas</h3>
-                <label className="text-[10px] font-bold uppercase block mb-1">Centrífuga(s) Activa(s)</label>
-                <select value={fd.centrifuga} onChange={e=>set('centrifuga',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm mb-4 outline-none focus:border-aguas-blue">
-                    <option>A</option><option>B</option><option>Móvil</option><option>A + B</option>
-                </select>
-
-                {/* Centrífuga A — siempre visible */}
-                <p className="text-[10px] font-black text-aguas-blue uppercase mb-2">Centrífuga A</p>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Torque A (%)</label><Fantasma valor={prevData?.torque}/></div>
-                        <input type="number" step="0.1" value={fd.torque} onChange={e=>set('torque',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alTA?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alTA && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 33 – 45</p>}
-                    </div>
-                    <div>
-                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Vel. Rel. A</label><Fantasma valor={prevData?.velocidad_relativa}/></div>
-                        <input type="number" step="0.1" value={fd.vel_rel} onChange={e=>set('vel_rel',e.target.value)}
-                            className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alVA?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                        {alVA && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 2.5 – 6.5</p>}
-                    </div>
-                </div>
-
-                {/* Centrífuga B — visible si B, Móvil o A+B */}
-                {(fd.centrifuga==='B'||fd.centrifuga==='Móvil'||fd.centrifuga==='A + B') && (
-                    <>
-                        <p className="text-[10px] font-black text-aguas-green uppercase mb-2">{fd.centrifuga==='Móvil'?'Centrífuga Móvil':'Centrífuga B'}</p>
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-red-500 shadow-sm border">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-1: Intercambiador de Calor</h3>
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             <div>
-                                <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Torque B (%)</label><Fantasma valor={prevData?.torque_b}/></div>
-                                <input type="number" step="0.1" value={fd.torque_b} onChange={e=>set('torque_b',e.target.value)}
-                                    className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alTB?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                                {alTB && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 33 – 45</p>}
+                                <div className="flex justify-between mb-1"><label className="text-[9px] font-black uppercase">T° Entrada</label><Fantasma valor={prevData?.temp_lodo_entrada_c}/></div>
+                                <input type="number" step="0.1" value={fd.temp_in} onChange={e=>setFd({...fd,temp_in:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alTIn ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                                {alTIn && <p className="text-[8px] text-red-600 font-bold mt-1">Debe ser mayor a 34C</p>}
                             </div>
                             <div>
-                                <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Vel. Rel. B</label><Fantasma valor={prevData?.velocidad_relativa_b}/></div>
-                                <input type="number" step="0.1" value={fd.vel_b} onChange={e=>set('vel_b',e.target.value)}
-                                    className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alVB?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                                {alVB && <p className="text-[9px] text-red-600 font-bold mt-1">⚠️ Rango: 2.5 – 6.5</p>}
+                                <div className="flex justify-between mb-1"><label className="text-[9px] font-black uppercase">T° Salida</label><Fantasma valor={prevData?.temp_lodo_salida_c}/></div>
+                                <input type="number" step="0.1" value={fd.temp_out} onChange={e=>setFd({...fd,temp_out:e.target.value})} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alTOut ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                                {alTOut && <p className="text-[8px] text-red-600 font-bold mt-1">Debe ser menor a 35.5C</p>}
                             </div>
                         </div>
-                    </>
-                )}
-                <MultiFotoUploader idCampo="a70_centrifuga" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-
-            {/* PC-2: Digestor (Juego Válvulas y Purga de Fondo) */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-red-500 shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-2: Digestor — Válvulas y Purga</h3>
-                <label className="text-[10px] font-bold uppercase block mb-1">Juego de Válvulas</label>
-                <select value={fd.juego_valvulas} onChange={e=>set('juego_valvulas',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue">
-                    <option>Azul</option><option>Rojo</option>
-                </select>
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border cursor-pointer mb-2">
-                    <input type="checkbox" checked={fd.purga_fondo} onChange={e=>set('purga_fondo',e.target.checked)} className="h-6 w-6"/>
-                    <span className="text-sm font-bold">Purga de Fondo realizada ✓</span>
-                </label>
-                <MultiFotoUploader idCampo="a70_digestor" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-
-            {/* PC-3: Polipack */}
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-green shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-3: Sistema Polipack</h3>
-                <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Tolva Polímero (%)</label><Fantasma valor={prevData?.nivel_polipack}/></div>
-                <input type="number" value={fd.polipack} onChange={e=>set('polipack',e.target.value)}
-                    className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-3 outline-none focus:border-aguas-blue ${alPoli?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                {alPoli && <p className="text-[9px] text-red-600 font-bold -mt-2 mb-2">⚠️ Rellenar tolva ({"> 50%"})</p>}
-
-                <label className="text-[10px] font-bold uppercase block mb-1">Bombas Dosificadoras</label>
-                <select value={fd.bombas_dos} onChange={e=>set('bombas_dos',e.target.value)} className="w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue">
-                    <option>Optimo</option><option>Fuga de polímero</option><option>Falla de flujo</option>
-                </select>
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border cursor-pointer mb-3">
-                    <input type="checkbox" checked={fd.carga_pol} onChange={e=>set('carga_pol',e.target.checked)} className="h-6 w-6"/>
-                    <span className="text-sm font-bold">Carga Polímero a la Tolva OK</span>
-                </label>
-                <div className="flex justify-between mb-1"><label className="text-[10px] font-bold uppercase">Caudal Agua Preparación (L/H ×100)</label><Fantasma valor={prevData?.caudal_agua_preparacion}/></div>
-                <input type="number" step="0.1" value={fd.caudal_agua} onChange={e=>set('caudal_agua',e.target.value)} className="w-full border-2 p-3 rounded-xl text-center text-lg mb-2 outline-none focus:border-aguas-blue"/>
-                <MultiFotoUploader idCampo="a70_polipack" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-
-            <div className="bg-white p-5 rounded-3xl shadow-sm border">
-                <label className="text-[10px] font-black uppercase mb-2 block">Observaciones Área 70</label>
-                {reqObs && <p className="text-[10px] text-red-600 font-black mb-2 uppercase">⚠️ Justifique desviaciones de proceso</p>}
-                <textarea value={fd.observaciones} onChange={e=>set('observaciones',e.target.value)} rows="3"
-                    className={`w-full border-2 p-4 rounded-2xl text-sm outline-none focus:border-aguas-blue ${reqObs?'bg-red-50 border-red-400':''}`}/>
-            </div>
-            <button onClick={()=>onTerminado(fd,fotos)} disabled={!canSubmit}
-                className={`w-full text-white font-black py-5 rounded-3xl shadow-xl uppercase tracking-widest text-sm active:scale-95 transition-all ${canSubmit?'bg-aguas-blue hover:bg-aguas-dark':'bg-gray-300 cursor-not-allowed'}`}>
-                Sellar Área 70
-            </button>
-        </div>
-    );
-}
-    const [fotos, setFotos] = useState({});
-    const mf = (c,u) => setFotos(p=>({...p,[c]:u}));
-
-    const torq=parseFloat(fd.torque), vel=parseFloat(fd.vel_rel), poli=parseFloat(fd.polipack);
-    const alTorque=torq<33||torq>45, alVel=vel<2.5||vel>6.5, alPoli=poli<50;
-    const reqObs = fd.bombas_dos!=='Optimo' || alTorque || alVel || alPoli;
-    const oblig  = ['a70_centrifuga','a70_polipack'];
-    const canSubmit = oblig.every(c=>fotos[c]?.length>0) && fd.torque!=='' && fd.vel_rel!=='' && fd.polipack!=='' && (!reqObs || fd.observaciones.trim()!=='');
-
-    return (
-        <div className="p-4 max-w-md mx-auto space-y-5 min-h-screen pb-10 fade-in">
-            <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl"><h2 className="text-lg font-black uppercase tracking-wide">Área 70: Deshidratación</h2></div>
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-blue shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-1: Centrífugas</h3>
-                <label className="text-[10px] font-bold uppercase block mb-1">Centrífuga Activa</label>
-                <select value={fd.centrifuga} onChange={e=>setFd(p=>({...p,centrifuga:e.target.value}))} className="w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue">
-                    <option>A</option><option>B</option><option>Móvil</option>
-                </select>
-                <div className="grid grid-cols-2 gap-3 mb-2">
-                    {[['torque','Torque (%)','torque',alTorque,'33 - 45'],['vel_rel','Vel. Relativa','velocidad_relativa',alVel,'2.5 - 6.5']].map(([k,lbl,pk,al,rng])=>(
-                        <div key={k}>
-                            <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">{lbl}</label><Fantasma valor={prevData?.[pk]}/></div>
-                            <input type="number" step="0.1" value={fd[k]} onChange={e=>setFd(p=>({...p,[k]:e.target.value}))}
-                                className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${al?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                            {al && <p className="text-[8px] text-red-600 font-bold mt-1">⚠️ Rango: {rng}</p>}
+                        <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 text-center mb-3">
+                            <p className="text-[10px] text-aguas-blue font-black uppercase">Salto Térmico Delta-T</p>
+                            <p className="text-2xl font-black text-aguas-dark">{deltaT} °C</p>
                         </div>
-                    ))}
-                </div>
-                <MultiFotoUploader idCampo="a70_centrifuga" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-            <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-green shadow-sm border">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-2: Sistema Polipack</h3>
-                <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Tolva Polímero (%)</label><Fantasma valor={prevData?.nivel_polipack}/></div>
-                <input type="number" value={fd.polipack} onChange={e=>setFd(p=>({...p,polipack:e.target.value}))}
-                    className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-3 outline-none focus:border-aguas-blue ${alPoli?'bg-red-50 border-red-400 text-red-800':''}`}/>
-                {alPoli && <p className="text-[9px] text-red-600 font-bold -mt-2 mb-2">⚠️ Rellenar tolva ({"> 50%"})</p>}
-                <label className="text-[10px] font-bold uppercase block mb-1">Bombas Dosificadoras</label>
-                <select value={fd.bombas_dos} onChange={e=>setFd(p=>({...p,bombas_dos:e.target.value}))} className="w-full border-2 p-3 rounded-xl text-sm mb-2 outline-none focus:border-aguas-blue">
-                    <option>Optimo</option><option>Fuga de polímero</option><option>Falla de flujo</option>
-                </select>
-                <MultiFotoUploader idCampo="a70_polipack" turnoId={turnoId} onFotosActualizadas={mf} />
-            </div>
-            <div className="bg-white p-5 rounded-3xl shadow-sm border">
-                <label className="text-[10px] font-black uppercase mb-2 block">Observaciones Área 70</label>
-                {reqObs && <p className="text-[10px] text-red-600 font-black mb-2 uppercase">⚠️ Justifique desviaciones de proceso</p>}
-                <textarea value={fd.observaciones} onChange={e=>setFd(p=>({...p,observaciones:e.target.value}))} rows="3"
-                    className={`w-full border-2 p-4 rounded-2xl text-sm outline-none focus:border-aguas-blue ${reqObs?'bg-red-50 border-red-400':''}`}/>
-            </div>
-            <button onClick={()=>onTerminado(fd,fotos)} disabled={!canSubmit}
-                className={`w-full text-white font-black py-5 rounded-3xl shadow-xl uppercase tracking-widest text-sm active:scale-95 transition-all ${canSubmit?'bg-aguas-blue hover:bg-aguas-dark':'bg-gray-300 cursor-not-allowed'}`}>
-                Sellar Área 70
-            </button>
-        </div>
-    );
-}
+                        <MultiFotoUploader idCampo="a60_inter" turnoId={turnoId} onFotosActualizadas={mf} />
+                    </div>
 
-// ─────────────────────────────────────────────
-// FORMULARIOS DE LOGÍSTICA
-// ─────────────────────────────────────────────
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-green shadow-sm border">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-2: Bombas Recirculadoras</h3>
+                        <select value={fd.bombas} onChange={e=>setFd({...fd,bombas:e.target.value})} className="w-full border-2 p-4 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue">
+                            <option>Optimo</option><option>Fuga en sello</option><option>Ruido o vibración excesiva</option>
+                        </select>
+                        <MultiFotoUploader idCampo="a60_bombas" turnoId={turnoId} onFotosActualizadas={mf} />
+                    </div>
+
+                    <div className="bg-white p-5 rounded-3xl shadow-sm border">
+                        <label className="text-[10px] font-black uppercase mb-2 block">Observaciones Área 60</label>
+                        {reqObs && <p className="text-[10px] text-red-600 font-black mb-2 animate-pulse uppercase">Justifique anomalías térmicas</p>}
+                        <textarea value={fd.observaciones} onChange={e=>setFd({...fd,observaciones:e.target.value})} className={`w-full border-2 p-4 rounded-2xl text-sm outline-none focus:border-aguas-blue ${reqObs ? 'bg-red-50 border-red-400' : ''}`} rows="3"></textarea>
+                    </div>
+                    <button onClick={()=>onTerminado(fd,fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-6 rounded-3xl shadow-xl uppercase tracking-widest active:scale-95 transition-all ${canSubmit ? 'bg-aguas-blue hover:bg-aguas-dark' : 'bg-gray-300 cursor-not-allowed'}`}>Sellar Área 60</button>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // FORMULARIO ÁREA 70
+        // ==========================================
+        function FormularioArea70({ turnoId, prevData, onTerminado }) {
+            const [fd, setFd] = useState({ centrifuga:'A', torque:'', vel_rel:'', polipack:'', bombas_dos:'Optimo', observaciones:'' });
+            const [fotos, setFotos] = useState({});
+            const mf = (c,u) => setFotos(p=>({...p,[c]:u}));
+
+            const torq=parseFloat(fd.torque), vel=parseFloat(fd.vel_rel), poli=parseFloat(fd.polipack);
+            const alTorque=torq<33||torq>45, alVel=vel<2.5||vel>6.5, alPoli=poli<50;
+            const reqObs = fd.bombas_dos !== 'Optimo' || alTorque || alVel || alPoli;
+            const oblig  = ['a70_centrifuga','a70_polipack'];
+            const canSubmit = oblig.every(c=>fotos[c]?.length>0) && fd.torque!=='' && fd.vel_rel!=='' && fd.polipack!=='' && (!reqObs || fd.observaciones.trim()!=='');
+
+            return (
+                <div className="p-4 max-w-md mx-auto space-y-6 min-h-screen pb-10 font-sans fade-in">
+                    <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-xl"><h2 className="text-lg font-black uppercase tracking-wide">Área 70: Deshidratación</h2></div>
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-blue shadow-sm border">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-1: Centrífugas</h3>
+                        <label className="text-[10px] font-bold uppercase block mb-1">Centrífuga Activa</label>
+                        <select value={fd.centrifuga} onChange={e=>setFd(p=>({...p,centrifuga:e.target.value}))} className="w-full border-2 p-3 rounded-xl text-sm mb-3 outline-none focus:border-aguas-blue">
+                            <option>A</option><option>B</option><option>Móvil</option>
+                        </select>
+                        <div className="grid grid-cols-2 gap-3 mb-2">
+                            <div>
+                                <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Torque (%)</label><Fantasma valor={prevData?.torque}/></div>
+                                <input type="number" step="0.1" value={fd.torque} onChange={e=>setFd(p=>({...p,torque:e.target.value}))} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alTorque ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                                {alTorque && <p className="text-[8px] text-red-600 font-bold mt-1">Rango: 33 a 45</p>}
+                            </div>
+                            <div>
+                                <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Vel. Relativa</label><Fantasma valor={prevData?.velocidad_relativa}/></div>
+                                <input type="number" step="0.1" value={fd.vel_rel} onChange={e=>setFd(p=>({...p,vel_rel:e.target.value}))} className={`w-full border-2 p-3 rounded-xl text-center text-lg outline-none focus:border-aguas-blue ${alVel ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                                {alVel && <p className="text-[8px] text-red-600 font-bold mt-1">Rango: 2.5 a 6.5</p>}
+                            </div>
+                        </div>
+                        <MultiFotoUploader idCampo="a70_centrifuga" turnoId={turnoId} onFotosActualizadas={mf} />
+                    </div>
+                    <div className="bg-white p-5 rounded-3xl border-l-[6px] border-l-aguas-green shadow-sm border">
+                        <h3 className="text-[10px] font-black text-gray-400 uppercase mb-3">PC-2: Sistema Polipack</h3>
+                        <div className="flex justify-between mb-1"><label className="text-[9px] font-bold uppercase">Nivel Tolva Polímero (%)</label><Fantasma valor={prevData?.nivel_polipack}/></div>
+                        <input type="number" value={fd.polipack} onChange={e=>setFd(p=>({...p,polipack:e.target.value}))} className={`w-full border-2 p-3 rounded-xl text-center text-lg mb-3 outline-none focus:border-aguas-blue ${alPoli ? 'bg-red-50 border-red-400 text-red-800' : ''}`}/>
+                        {alPoli && <p className="text-[9px] text-red-600 font-bold -mt-2 mb-2">Rellenar tolva mayor a 50 porciento</p>}
+                        <label className="text-[10px] font-bold uppercase block mb-1">Bombas Dosificadoras</label>
+                        <select value={fd.bombas_dos} onChange={e=>setFd(p=>({...p,bombas_dos:e.target.value}))} className="w-full border-2 p-3 rounded-xl text-sm mb-2 outline-none focus:border-aguas-blue">
+                            <option>Optimo</option><option>Fuga de polímero</option><option>Falla de flujo</option>
+                        </select>
+                        <MultiFotoUploader idCampo="a70_polipack" turnoId={turnoId} onFotosActualizadas={mf} />
+                    </div>
+                    <div className="bg-white p-5 rounded-3xl shadow-sm border">
+                        <label className="text-[10px] font-black uppercase mb-2 block">Observaciones Área 70</label>
+                        {reqObs && <p className="text-[10px] text-red-600 font-black mb-2 uppercase">Justifique desviaciones de proceso</p>}
+                        <textarea value={fd.observaciones} onChange={e=>setFd(p=>({...p,observaciones:e.target.value}))} rows="3" className={`w-full border-2 p-4 rounded-2xl text-sm outline-none focus:border-aguas-blue ${reqObs ? 'bg-red-50 border-red-400' : ''}`}/>
+                    </div>
+                    <button onClick={()=>onTerminado(fd,fotos)} disabled={!canSubmit} className={`w-full text-white font-black py-5 rounded-3xl shadow-xl uppercase tracking-widest text-sm active:scale-95 transition-all ${canSubmit ? 'bg-aguas-blue hover:bg-aguas-dark' : 'bg-gray-300 cursor-not-allowed'}`}>
+                        Sellar Área 70
+                    </button>
+                </div>
+            );
+        }
+
 function FormularioEntrega({ onTerminado, prevData }) {
     const [fd, setFd] = useState({ radios:true, llaves:true, detector:true, linternas:true, pol_cen:'', pol_sedi:'', petroleo:'', cal:'', observaciones:'' });
     const allOk = fd.radios && fd.llaves && fd.detector && fd.linternas;
